@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+require 'noms/command'
+
+Process.exit NOMS::Command.run(ARGV)
