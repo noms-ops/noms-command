@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
     spec.authors       = ["Jeremy Brinkley"]
     spec.email         = ["jbrinkley@evernote.com"]
     spec.summary       = %q{Interpreter for server-defined command-line interfaces}
-    spec.homepage      = "http://github.com/evernote/noms-command"
+    spec.homepage      = "http://github.com/en-jbrinkley/noms-command"
     spec.license       = "Apache-2"
 
     spec.files         = `git ls-files -z`.split("\x0")
