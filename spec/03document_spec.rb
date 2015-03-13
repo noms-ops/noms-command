@@ -6,9 +6,11 @@ describe "NOMS::Command::Document" do
     before(:all) do
         FileUtils.mkdir_p('test')
 
-        File.open('test/foo.txt', 'w') do |fh|
+        File.open('test/foo.json', 'w') do |fh|
             fh << <<-EOF.gsub(/^\s{12}/,'')
-            Test output for local file foo.txt
+            { "$doctype": "noms-v2",
+              "$body": ["Test output for foo command"]
+            }
             EOF
         end
 
@@ -56,12 +58,26 @@ describe "NOMS::Command::Document" do
         context 'with local file' do
             before(:all) do
                 @doc = NOMS::Command::Document.new(NOMS::Command::Window.new($0),
-                                                   "file:///#{Dir.pwd}/test/foo.txt", [])
+                                                   "file:///#{Dir.pwd}/test/foo.json", [])
                 @doc.fetch!
             end
 
-            specify { expect(@doc.type).to eq 'text/plain' }
-            specify { expect(@doc.body).to include 'Test output for local file' }
+            specify { expect(@doc.type).to eq 'noms-v2' }
+            specify { expect(@doc.body).to have_key '$doctype' }
+            specify { expect(@doc.body).to have_key '$body' }
+        end
+
+        context 'with remote URL' do
+            before(:all) do
+                @doc = NOMS::Command::Document.new(NOMS::Command::Window.new($0),
+                                                   'http://localhost:8787/foo.json',
+                                                   [])
+                @doc.fetch!
+            end
+
+            specify { expect(@doc.type).to eq 'noms-v2' }
+            specify { expect(@doc.body).to have_key '$doctype' }
+            specify { expect(@doc.body).to have_key '$body' }
         end
     end
 

@@ -2,11 +2,13 @@
 
 require 'noms/command/version'
 require 'noms/command/window'
+require 'noms/command/useragent'
 
 require 'uri'
 require 'logger'
-require 'httpclient'
 require 'mime-types'
+require 'httpclient'
+require 'httpclient'
 
 class NOMS
 
@@ -18,7 +20,10 @@ end
 
 class NOMS::Command::Document
 
-    attr_accessor :window, :argv, :options, :exitcode, :type, :body
+    # Should user-agent actually be here?
+    attr_accessor :window, :argv, :options,
+        :exitcode, :type, :body, :useragent
+
 
     def initialize(window, origin, argv, attrs={})
         @window = window             # A NOMS::Command::Window
@@ -32,6 +37,7 @@ class NOMS::Command::Document
         @type = nil
         @log = attrs[:logger] || Logger.new($stderr)
         @log.level = attrs[:loglevel] || Logger::WARN
+        @useragent = NOMS::Command::UserAgent.new(@origin, :logger => @log)
     end
 
     def fetch!
@@ -40,6 +46,28 @@ class NOMS::Command::Document
         when 'file'
             @type = (MIME::Types.of(@origin.path).first || MIME::Types['text/plain'].first).content_type
             @body = File.open(@origin.path, 'r') { |fh| fh.read }
+        when /^http/
+            @log.debug "Document: requesting @origin.inspect"
+            response = @useragent.get(@origin)
+            if HTTP::Status.successful? response.status
+                # Unlike typical ReST data sources, this
+                # should very rarely fail unless there is
+                # a legitimate communication issue.
+                @type = response.contenttype || 'text/plain'
+                @body = response.content
+            else
+                raise NOMS::Command::Error.new("Failed to request #{@origin}: #{response.status} #{response.reason}")
+            end
+        else
+            raise NOMS::Command::Error.new("Can't retrieve a '#{scheme}' url (#{@origin})")
+        end
+
+        case @type
+        when /^(application|text)\/(x-|)json/
+            @body = JSON.parse(@body)
+            if @body.has_key? '$doctype'
+                @type = @body['$doctype']
+            end
         end
     end
 
