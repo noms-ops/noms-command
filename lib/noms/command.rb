@@ -1,4 +1,8 @@
-require "noms/command/version"
+#!ruby
+
+require 'noms/command/version'
+require 'noms/command/window'
+require 'noms/command/document'
 
 class NOMS
 
@@ -12,6 +16,14 @@ class NOMS::Command
         if argv.empty?
             puts self.usage('noms2')
             2
+        else
+            window = NOMS::Command::Window.new($0)
+            origin = argv.shift
+            doc = NOMS::Command::Document.new(window, origin, argv)
+            doc.fetch!
+            doc.render!
+            puts doc.display
+            doc.exitcode
         end
     end
 
