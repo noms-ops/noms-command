@@ -5,6 +5,7 @@
 /coverage/
 /doc/
 /pkg/
+/test/
 /spec/reports/
 /tmp/
 *.bundle
