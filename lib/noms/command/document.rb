@@ -18,7 +18,7 @@ end
 
 class NOMS::Command::Document
 
-    attr_accessor :window, :argv, :options, :exitcode
+    attr_accessor :window, :argv, :options, :exitcode, :type, :body
 
     def initialize(window, origin, argv, attrs={})
         @window = window             # A NOMS::Command::Window
@@ -50,7 +50,8 @@ class NOMS::Command::Document
     def display
         case @type
         when 'noms-v2'
-        when 'raw-object'
+            # @body is an object (with a body attribute)
+        when 'noms-raw'
         when /^text(\/|$)/
             @body
         else
