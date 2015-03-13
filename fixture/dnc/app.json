@@ -1,0 +1,3 @@
+{ '$doctype': 'noms-v2',
+  '$script': ['lib/commands.js'],
+  '$body': null }

@@ -1,0 +1,21 @@
+#!/bin/bash
+
+echo '['
+id=0
+
+while read name
+do
+    let id=id+1
+    read street
+    read city
+    read phone
+    number=$(echo $street | cut -f1 -d\ )
+    number=555-$(printf '%04d' $number)
+    phone=$(echo $phone | sed "s/xxx-xxxx/$number/")
+    echo -n "{'id':$id,'name':'$name','street':'$street','city':'$city','phone':'$phone'}" | tr "'" '"'
+    read blank || break
+    echo ,
+done
+
+echo
+echo ']'
