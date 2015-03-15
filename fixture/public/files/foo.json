@@ -1,2 +1,2 @@
-{ '$doctype': 'noms-v2',
-  '$body': ["Test output for foo.json"] }
+{ "$doctype": "noms-v2",
+  "$body": ["Test output for foo.json"] }
