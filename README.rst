@@ -209,6 +209,12 @@ Invoked scripts have access to the following global objects:
   * **argv** - The arguments being invoked. The first element of this array is the first argument passed to **noms** itself (not the script it ultimately fetches, but how it's invoked, similar to ``$1``
   * **exitcode** - The numeric exit code with which **noms** will exit. Initially 0.
 
+Question
+--------
+
+How much formatting should **noms** do? Web pages do a lot of formatting, and the Javascript influences it. So I was going to have
+a relatively rich formatting language (above). Now I'm wondering if maybe the body of the page should just be text, and the scripts are free to do with it what they will. In effect--have no 'special' formatting. No, it's probably better to at least have a default and not have to write formatting code for every case.
+
 Web 1.0 vs Web 2.0
 ------------------
 
@@ -218,3 +224,5 @@ Possible Future Features
 ------------------------
 
 Streaming: provide a way to have a streaming pipeline between data fetched by scripts in a "page" and the output stream of the **noms** command.
+
+Character sets

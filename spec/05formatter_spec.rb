@@ -42,6 +42,45 @@ describe NOMS::Command::Formatter do
             expect(formatter.render(object)).to eq object.to_yaml
         end
 
+        it 'renders a object-list as formatted lines' do
+            object_list = {
+                '$type' => 'object-list',
+                '$header' => true,
+                '$columns' => [
+                    {
+                        'field' => 'priority',
+                        'width' => 3,
+                        'align' => 'right',
+                        'heading' => 'Pri'
+                    },
+                    {
+                        'field' => 'title',
+                        'width' => 10,
+                        'heading' => 'Name'
+                    },
+                    'description'
+                ],
+                '$data' => [
+                    {
+                        'title' => 'Issue 1',
+                        'priority' => 3,
+                        'description' => 'The first issue'
+                    },
+                    {
+                        'title' => 'Issue 2',
+                        'priority' => 2,
+                        'description' => 'The second issue'
+                    }
+                ]
+            }
+            output = <<-TEST.gsub(/^\s{12}/,'').gsub(/\n$/,'')
+            Pri Name       description
+              3 Issue 1    The first issue
+              2 Issue 2    The second issue
+            TEST
+            expect(formatter.render(object_list)).to eq output
+        end
+
     end
 
 end
