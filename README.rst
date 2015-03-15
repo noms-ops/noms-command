@@ -213,3 +213,8 @@ Web 1.0 vs Web 2.0
 ------------------
 
 Like the "real web", **noms** commands can choose to do some calculation on the server and some on the client: **noms** doesn't care. You can use no ``$script`` tag at all and just calculate the entire document to be rendered in the client (though this currently odoesn't allow for argument interpretation, in the future the arguments may be passed in request headers or **noms** may allow a way for them to show up in a query string or POST request--but **noms** is not really a command-line http client either). This is up to the application designer.
+
+Possible Future Features
+------------------------
+
+Streaming: provide a way to have a streaming pipeline between data fetched by scripts in a "page" and the output stream of the **noms** command.

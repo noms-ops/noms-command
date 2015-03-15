@@ -3,6 +3,7 @@
 require 'noms/command/version'
 require 'noms/command/window'
 require 'noms/command/document'
+require 'noms/command/formatter'
 
 class NOMS
 
