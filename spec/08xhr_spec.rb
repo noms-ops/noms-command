@@ -53,6 +53,12 @@ describe NOMS::Command::XMLHttpRequest do
                 expect(@xhr.responseText).to match /^\[/
             end
 
+            it 'should retrieve web content from relative URL' do
+                @xhr.open('GET', '/files/data.json', false)
+                @xhr.send()
+                expect(@xhr.responseText).to match /^\[/
+            end
+
             it 'should raise an error on different-origin' do
                 expect {
                     @xhr.open('GET', 'http://localhost:8786/files/data.json', false)

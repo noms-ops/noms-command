@@ -1,5 +1,5 @@
 { "$doctype": "noms-v2",
-  "$script": ["lib/commands.js"],
+  "$script": [{ "$source": "lib/commands.js" }],
   "$body": [
       "Usage:",
       "   noms dnc add <field>=<value> [<field>=<value> [...]]",

@@ -1,5 +1,7 @@
 #!/usr/bin/env rspec
 
+require 'fileutils'
+require 'uri'
 require 'noms/command/application'
 
 describe NOMS::Command::Application do
@@ -14,7 +16,7 @@ describe NOMS::Command::Application do
 
     after(:all) do
         Process.kill 'TERM', File.read('test/dnc.pid').to_i
-        FileUtils.rm 'test/dnc.pid'
+        FileUtils.rm 'test/dnc.pid' if File.exist? 'test/dnc.pid'
     end
 
     describe '.new' do
@@ -22,11 +24,20 @@ describe NOMS::Command::Application do
         context 'with no arguments' do
 
             before(:each) do
-                @doc = NOMS::Command::Application.new(NOMS::Command::Window.new($0),
-                                                   'http://localhost:8787/dnc.json',
+                @app = NOMS::Command::Application.new(NOMS::Command::Window.new($0),
+                                                   URI.parse('http://localhost:8787/dnc.json'),
                                                    [])
             end
 
+        end
+
+        it "should produce a usage message" do
+            app = NOMS::Command::Application.new(NOMS::Command::Window.new($0),
+                                                 'http://localhost:8787/dnc.json',
+                                                 ['dnc'])
+            app.fetch!
+            app.render!
+            expect(app.display).to include 'Usage:'
         end
 
     end

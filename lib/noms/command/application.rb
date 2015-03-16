@@ -7,10 +7,10 @@ require 'noms/command/error'
 require 'noms/command/urinion'
 require 'noms/command/formatter'
 require 'noms/command/document'
+require 'noms/command/xmlhttprequest'
 
 require 'logger'
 require 'mime-types'
-require 'httpclient'
 require 'v8'
 
 class NOMS
@@ -38,21 +38,17 @@ class NOMS::Command::Application
         @argv = argv
         @options = { }
         @type = nil
-        @log = attrs[:logger] || Logger.new($stderr)
-        @log.level = attrs[:loglevel] || _default_severity
-        @log.debug "Creating application object at origin: #{origin} (#{@origin.inspect})"
-        @useragent = NOMS::Command::UserAgent.new(@origin, :logger => @log)
-    end
 
-    def _default_severity
-        level = {
-            'DEBUG' => Logger::DEBUG,
-            'INFO' => Logger::INFO,
-            'WARN' => Logger::WARN,
-            'ERROR' => Logger::ERROR,
-            'FATAL' => Logger::FATAL
-        }
-        level[ENV['NOMS_LOGLEVEL']] || Logger::WARN
+        if attrs[:logger]
+            @log = attrs[:logger]
+        else
+            @log = Logger.new $stderr
+            @log.level = Logger::WARN
+            @log.level = Logger::DEBUG if (ENV['NOMS_DEBUG'] and ! ENV['NOMS_DEBUG'].empty?)
+        end
+
+        @log.debug "Application #{argv[0]} has origin: #{origin}"
+        @useragent = NOMS::Command::UserAgent.new(@origin, :logger => @log)
     end
 
     def fetch!
@@ -66,9 +62,8 @@ class NOMS::Command::Application
             raise NOMS::Command::Error.new("data URLs must contain application/json") unless @type == 'application/json'
             @body = @origin.data
         when /^http/
-            @log.debug "Application: requesting @origin.inspect"
             response = @useragent.get(@origin)
-            if HTTP::Status.successful? response.status
+            if response.ok?
                 # Unlike typical ReST data sources, this
                 # should very rarely fail unless there is
                 # a legitimate communication issue.
@@ -84,7 +79,6 @@ class NOMS::Command::Application
         case @type
         when /^(application|text)\/(x-|)json/
             @body = JSON.parse(@body)
-            @log.debug "HTTP body is JSON: #{@body.inspect}"
             if @body.has_key? '$doctype'
                 @type = @body['$doctype']
                 @log.debug "Treating as #{@type} document"
@@ -110,12 +104,36 @@ class NOMS::Command::Application
             @window.document = @document
             @v8[:window] = @window
             @v8[:document] = @document
+            @v8[:XMLHttpRequest] = NOMS::Command::XMLHttpRequest
             @document.script.each do |script|
                 if script.respond_to? :has_key? and script.has_key? '$source'
                     # Parse relative URL and load
+                    response = @useragent.get(script['$source'])
+                    if response.ok?
+                        case response.contenttype
+                        when /^(application|text)\/(x-|)javascript/
+                            begin
+                                @v8.eval response.content
+                            rescue StandardError => e
+                                @log.warn "Javascript error: #{e.message}"
+                                @log.debug e.backtrace.join("\n")
+                            end
+                        else
+                            @log.warn "Unsupported script type '#{response.contenttype.inspect}' " +
+                                "for script from #{script['$source'].inspect}"
+                        end
+                    else
+                        @log.warn "Couldn't load script from #{script['$source'].inspect}: #{response.status} #{response.reason}"
+                        @log.debug "Body of unsuccessful request: #{response.body}"
+                    end
                 else
                     # It's javascript text
-                    @v8.eval script
+                    begin
+                        @v8.eval script
+                    rescue StandardError => e
+                        @log.warn "Javascript error: #{e.message}"
+                        @log.debug e.backtrace.join("\n")
+                    end
                 end
             end
         end

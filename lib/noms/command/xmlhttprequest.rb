@@ -62,7 +62,7 @@ class NOMS::Command::XMLHttpRequest
 
     def open(method, url, async=true, user=nil, password=nil)
         raise NOMS::Command::Error.new "origin of #{url} doesn't match application origin (#{@origin})" unless
-            same_origin? url
+            same_origin? @ua.absolute_url(url)
         @readyState = 0
         @responseText = ''
         @method = method
