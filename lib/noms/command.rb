@@ -21,10 +21,10 @@ class NOMS::Command
             window = NOMS::Command::Window.new($0)
             origin = argv.shift
             doc = NOMS::Command::Document.new(window, origin, argv)
-            doc.fetch!
-            doc.render!
-            puts doc.display
-            doc.exitcode
+            doc.fetch!                    # Retrieve page
+            doc.render!                   # Run scripts
+            puts doc.display              # Display result
+            doc.exitcode                  # Return exitcode
         end
     end
 
