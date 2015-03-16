@@ -84,17 +84,20 @@ The principle dynamic doctype is the ``noms-v2``, which is an object with the fo
 ``$script``
   An ordered array of scripts to fetch and evaluate.
 
-``$format-fields``
-  An array of objects, each having (at least) a ``name`` and ``width`` attribute. May also include a ``label`` attribute
-  for the column heading.
+``$argv``
+
+``$exitcode``
 
 ``$body``
   The body of the document is the data to display. See `Output Description Notation`_ below.
 
+From the perspective of javascript executing within the application, these are accessible as properties of the
+global **document** object.
+
 Output Description Notation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following entities are allowed in the body of a **noms=2** document.
+The following entities are allowed in the body of a **noms-v2** document.
 
 * Arrays - Each item in the array is concatenated with a line-break between them.
 * Strings and numbers - A string or number is just displayed
