@@ -29,6 +29,26 @@ describe NOMS::Command do
                 }.to output("#{@url} one two three\n").to_stdout
             end
 
+            it "should leave post-arg options alone" do
+                expect {
+                    NOMS::Command.run ['--bookmarks=/dev/null', @url, '--command-opt', 'one']
+                }.to output("#{@url} --command-opt one\n").to_stdout
+            end
+
+            it "should honor bookmarks" do
+                expect {
+                    NOMS::Command.run ['--bookmarks=test/etc/noms/bookmarks.json',
+                                       'echo1', 'one', 'two', 'three']
+                }.to output("echo1 one two three\n").to_stdout
+            end
+
+            it "should honor /" do
+                expect {
+                    NOMS::Command.run ['--bookmarks=test/etc/noms/bookmarks.json',
+                                       'echo1/special', 'one', 'two', 'three']
+                }.to output("echo1/special one two three\n").to_stdout
+            end
+
         end
 
     end

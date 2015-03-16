@@ -20,16 +20,8 @@ The basic way of invoking an **noms** command is as follows::
 
 **noms** invokes the app at *url* with the given options and arguments, displaying the results.
 
-Special URLs
-~~~~~~~~~~~~
-
-Certain invalid "URLs" are interpreted specially:
-
-* ``noms login *url*``
-
-Normally **noms** handles user authentication implicitly. With this command, it does a HEAD request against the application URL, forcing login if required.
-
-* ``noms logout *url*``
+Bookmarks
+~~~~~~~~~
 
 Causes **noms** to forget its session state for the given application URL.
 

@@ -10,12 +10,13 @@ class NOMS::Command::Window
 
     attr_accessor :document
 
-    def initialize(invoker)
+    def initialize(invoker, opt={})
         @document = nil
         @invoker = invoker
+        @log = opt[:logger] || Logger.new($stderr)
     end
 
-    def isatty
+    def isatty()
         $stdout.tty?
     end
 

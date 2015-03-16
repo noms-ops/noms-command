@@ -18,12 +18,6 @@ describe NOMS::Command do
     after(:all)  { FileUtils.rm_r 'test' }
 
     describe '.run' do
-        context 'with no arguments' do
-            it 'prints a usage message' do
-                expect { NOMS::Command.run([]) }.to output(/Usage:/).to_stdout
-            end
-        end
-
         context 'with one file argument' do
             it 'shows the file contents' do
                 file = 'file://' + File.join(Dir.pwd, 'test', 'foo.txt')

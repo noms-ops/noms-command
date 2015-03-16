@@ -78,7 +78,7 @@ class NOMS::Command::Application
                 raise NOMS::Command::Error.new("Failed to request #{@origin}: #{response.status} #{response.reason}")
             end
         else
-            raise NOMS::Command::Error.new("Can't retrieve a #{@origin.scheme.inspect} url (#{@origin.inspect})")
+            raise NOMS::Command::Error.new("noms command #{@argv[0].inspect} not found: not a URL or bookmark")
         end
 
         case @type
