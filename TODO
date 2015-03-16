@@ -1,12 +1,5 @@
-bin/noms2 http://localhost:8787/files/data.json
-/Users/jbrinkley/noms-command/lib/noms/command/document.rb:68:in `fetch!': undefined method `has_key?' for #<Array:0x007fee36a73c18> (NoMethodError)
-	from /Users/jbrinkley/noms-command/lib/noms/command.rb:24:in `run'
-	from bin/noms2:20:in `<main>'
+Loading scripts, relative paths in URLs
+
+Error output
 
 Debugging in renderer
-
-If there's no output, why is there a blank line?
-
-Exit code
-
-Scripts
