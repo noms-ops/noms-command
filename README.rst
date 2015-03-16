@@ -124,7 +124,10 @@ Example **noms** conversation::
   noms >> GET https://cmdb.noms-example.com/cmdb.json
   noms << set 'document' to retrieved object:
   { "$doctype": "appdoc",
-    "$script": ["lib/optconfig.js", "noms/cmdb.js", "noms/cli.js"],
+    "$script": [
+      { "$source": "lib/optconfig.js"},
+      { "$source": "noms/cmdb.js" },
+      { "$source": "noms/cli.js"} ],
     "$body": null
   }
   noms << set 'document.argv' to ["https://cmdb.noms-example.com/cmdb.json", "--format=csv", "system", "fqdn~^m00"]

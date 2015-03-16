@@ -2,7 +2,7 @@
 
 require 'noms/command/version'
 require 'noms/command/window'
-require 'noms/command/document'
+require 'noms/command/application'
 require 'noms/command/formatter'
 
 class NOMS
@@ -20,11 +20,11 @@ class NOMS::Command
         else
             window = NOMS::Command::Window.new($0)
             origin = argv.shift
-            doc = NOMS::Command::Document.new(window, origin, argv)
-            doc.fetch!                    # Retrieve page
-            doc.render!                   # Run scripts
-            puts doc.display              # Display result
-            doc.exitcode                  # Return exitcode
+            app = NOMS::Command::Application.new(window, origin, argv)
+            app.fetch!                    # Retrieve page
+            app.render!                   # Run scripts
+            puts app.display              # Display result
+            app.exitcode                  # Return exitcode
         end
     end
 

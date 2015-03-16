@@ -12,4 +12,8 @@ class NOMS::Command::Window
         @invoker = invoker
     end
 
+    def isatty
+        $stdout.tty?
+    end
+
 end

@@ -19,7 +19,7 @@ class NOMS::Command
 
 end
 
-class NOMS::Command::Document
+class NOMS::Command::Application
 
     # Should user-agent actually be here?
     attr_accessor :window, :argv, :options,
@@ -38,7 +38,7 @@ class NOMS::Command::Document
         @type = nil
         @log = attrs[:logger] || Logger.new($stderr)
         @log.level = attrs[:loglevel] || _default_severity
-        @log.debug "Creating document object at origin: #{origin}"
+        @log.debug "Creating application object at origin: #{origin}"
         @useragent = NOMS::Command::UserAgent.new(@origin, :logger => @log)
     end
 
@@ -64,7 +64,7 @@ class NOMS::Command::Document
             raise NOMS::Command::Error.new("data URLs must contain application/json") unless @type == 'application/json'
             @body = @origin.data
         when /^http/
-            @log.debug "Document: requesting @origin.inspect"
+            @log.debug "Application: requesting @origin.inspect"
             response = @useragent.get(@origin)
             if HTTP::Status.successful? response.status
                 # Unlike typical ReST data sources, this
