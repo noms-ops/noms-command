@@ -1,3 +1,10 @@
 { "$doctype": "noms-v2",
   "$script": ["lib/commands.js"],
-  "$body": null }
+  "$body": [
+      "Usage:",
+      "   noms dnc add <field>=<value> [<field>=<value> [...]]",
+      "   noms dnc remove <id>",
+      "   noms check { <phone> | <name> }",
+      "   noms list"
+  ]
+}
