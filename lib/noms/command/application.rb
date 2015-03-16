@@ -6,10 +6,12 @@ require 'noms/command/useragent'
 require 'noms/command/error'
 require 'noms/command/urinion'
 require 'noms/command/formatter'
+require 'noms/command/document'
 
 require 'logger'
 require 'mime-types'
 require 'httpclient'
+require 'v8'
 
 class NOMS
 
@@ -23,11 +25,13 @@ class NOMS::Command::Application
 
     # Should user-agent actually be here?
     attr_accessor :window, :argv, :options,
-        :exitcode, :type, :body, :useragent
+        :exitcode, :type, :body, :useragent,
+        :document
 
 
     def initialize(window, origin, argv, attrs={})
         @window = window             # A NOMS::Command::Window
+        @document = nil
         @origin = NOMS::Command::URInion.parse(origin)
         if @origin.scheme == 'file' and @origin.host.nil?
             @origin.host = 'localhost'
@@ -86,6 +90,7 @@ class NOMS::Command::Application
             if @body.has_key? '$doctype'
                 @type = @body['$doctype']
                 @log.debug "Treating as #{@type} document"
+                @document = NOMS::Command::Document.new @body
             else
                 @log.debug "Treating as raw object (no '$doctype')"
                 @type = 'noms-raw'
@@ -94,17 +99,28 @@ class NOMS::Command::Application
     end
 
     def render!
-        # Fetch and interpret '$script' tag if any
+        if @document and @document.script
+            @v8 = V8::Context.new
+            # Set up same-origin context and stuff--need
+            # Ruby objects to do XHR and limit local I/O
+            @window.document = @document
+            @v8[:window] = @window
+            @v8[:document] = @document
+            @document.script.each do |script|
+                if script.respond_to? :has_key? and script.has_key? '$source'
+                    # Parse relative URL and load
+                else
+                    # It's javascript text
+                    @v8.eval script
+                end
+            end
+        end
     end
 
     def display
         case @type
         when 'noms-v2'
-            # @body is an object (with a body attribute)
-            # Confusing dual-used of 'body'. @body variable is
-            # HTTP response body, basically, and '$body' is
-            # document $body attribute.
-            NOMS::Command::Formatter.new(@body['$body']).render
+            NOMS::Command::Formatter.new(@document.body).render
         when 'noms-raw'
             @body.to_yaml
         when /^text(\/|$)/

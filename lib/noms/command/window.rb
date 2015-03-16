@@ -8,7 +8,10 @@ end
 
 class NOMS::Command::Window
 
+    attr_accessor :document
+
     def initialize(invoker)
+        @document = nil
         @invoker = invoker
     end
 
