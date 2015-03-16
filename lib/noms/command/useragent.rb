@@ -24,6 +24,9 @@ class NOMS::Command::UserAgent
         end
         # Set cookie jar to something origin-specific
         # Set user-agent to something nomsy
+        # auth stuff
+        # respond to 403 forbidden with prompting and
+        # caching
     end
 
     # This library is for implementing host environment
@@ -31,8 +34,8 @@ class NOMS::Command::UserAgent
     # Javascript-based XMR, the same-origin policy is
     # not important here. In other words, this is how
     # noms initial page is fetched, and script tags
-    def get(url)
-        @client.request(:get, url)
+    def get(url, headers)
+        @client.get(url, '', headers)
     end
 
 end

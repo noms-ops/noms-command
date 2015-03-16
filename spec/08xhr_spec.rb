@@ -1,6 +1,7 @@
 #!/usr/bin/env rspec
 
 require 'v8'
+require 'fileutils'
 
 require 'noms/command/xmlhttprequest'
 
@@ -9,6 +10,17 @@ describe NOMS::Command::XMLHttpRequest do
     before(:all) do
         # I'm going to go with this class variable for now
         NOMS::Command::XMLHttpRequest.origin = 'http://localhost:8787/'
+
+        # Start the DNC application web server on port 8787
+        FileUtils.rm_r 'test' if File.directory? 'test'
+        system 'cp -R fixture test'
+        system("sh -c '#{RbConfig.ruby} test/dnc.rb >test/dnc.out 2>&1 &'")
+        sleep 2
+    end
+
+    after(:all) do
+        Process.kill 'TERM', File.read('test/dnc.pid').to_i
+        FileUtils.rm 'test/dnc.pid'
     end
 
     context 'from ruby' do
@@ -50,8 +62,11 @@ describe NOMS::Command::XMLHttpRequest do
         end
 
         describe '#setRequestHeader' do
-            @xhr.setRequestHeader('Accept', 'text/plain')
-            expect(@xhr.headers['Accept']).to eq 'text/plain'
+
+            it 'should set the request header' do
+                @xhr.setRequestHeader('Accept', 'text/plain')
+                expect(@xhr.headers['Accept']).to eq 'text/plain'
+            end
         end
 
         describe '#onreadystatechange' do
