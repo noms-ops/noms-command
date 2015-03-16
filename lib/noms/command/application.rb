@@ -24,10 +24,9 @@ end
 class NOMS::Command::Application
 
     # Should user-agent actually be here?
-    attr_accessor :window, :argv, :options,
-        :exitcode, :type, :body, :useragent,
+    attr_accessor :window, :options,
+        :type, :body, :useragent,
         :document
-
 
     def initialize(window, origin, argv, attrs={})
         @window = window             # A NOMS::Command::Window
@@ -36,7 +35,6 @@ class NOMS::Command::Application
         if @origin.scheme == 'file' and @origin.host.nil?
             @origin.host = 'localhost'
         end
-        @exitcode = 0
         @argv = argv
         @options = { }
         @type = nil
@@ -91,11 +89,17 @@ class NOMS::Command::Application
                 @type = @body['$doctype']
                 @log.debug "Treating as #{@type} document"
                 @document = NOMS::Command::Document.new @body
+                @document.argv = @argv
+                @document.exitcode = 0
             else
                 @log.debug "Treating as raw object (no '$doctype')"
                 @type = 'noms-raw'
             end
         end
+    end
+
+    def exitcode
+        @document ? @document.exitcode : 0
     end
 
     def render!

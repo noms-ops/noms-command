@@ -34,7 +34,7 @@ class NOMS::Command::UserAgent
     # Javascript-based XMR, the same-origin policy is
     # not important here. In other words, this is how
     # noms initial page is fetched, and script tags
-    def get(url, headers)
+    def get(url, headers={})
         @client.get(url, '', headers)
     end
 

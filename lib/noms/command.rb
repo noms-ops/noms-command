@@ -19,11 +19,12 @@ class NOMS::Command
             2
         else
             window = NOMS::Command::Window.new($0)
-            origin = argv.shift
+            origin = argv[0]
             app = NOMS::Command::Application.new(window, origin, argv)
             app.fetch!                    # Retrieve page
             app.render!                   # Run scripts
-            puts app.display              # Display result
+            out = app.display
+            puts out unless out.empty?
             app.exitcode                  # Return exitcode
         end
     end

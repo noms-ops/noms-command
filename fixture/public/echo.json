@@ -1,0 +1,6 @@
+{ "$doctype": "noms-v2",
+  "$body": [],
+  "$script": [
+      "document.body = document.argv.slice(1).join(\" \")"
+  ]
+}

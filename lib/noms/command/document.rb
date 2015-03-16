@@ -12,6 +12,8 @@ end
 
 class NOMS::Command::Document
 
+    attr_accessor :exitcode, :argv
+
     def initialize(doc)
         raise NOMS::Command::Error.new "Document type '#{docobj['$doctype']}' not understood" unless
             doc['$doctype'] == 'noms-v2'
