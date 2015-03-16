@@ -108,14 +108,14 @@ The following entities are allowed in the body of a **noms-v2** document.
   * ``$type``: **object-list** An object list is a (usually) tabular list of objects with information on how
     wide to make the fields or how to otherwise serialize the objects. It has the following attributes:
 
-    * **render**: The format in which to render, one of: **json**, **yaml**, **text** (default **text**)
-    * **fields**: Field names, headings and widths
-    * **objects**: The objects to render
+    * **format**: The format in which to render, one of: **json**, **yaml**, **text** (default **text**)
+    * **columns**: Field names, headings and widths
+    * **data**: The objects to render
 
   * ``$type``: **object** An object described-object has the following attributes:
 
-    * **render**: The format in which to render, one of: **json**, **yaml**, **text** (default **yaml**)
-    * **object**: The object data
+    * **format**: The format in which to render, one of: **json**, **yaml**, **text** (default **yaml**)
+    * **data**: The object data
 
 Putting it all together
 -----------------------

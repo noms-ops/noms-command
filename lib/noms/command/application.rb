@@ -40,7 +40,7 @@ class NOMS::Command::Application
         @type = nil
         @log = attrs[:logger] || Logger.new($stderr)
         @log.level = attrs[:loglevel] || _default_severity
-        @log.debug "Creating application object at origin: #{origin}"
+        @log.debug "Creating application object at origin: #{origin} (#{@origin.inspect})"
         @useragent = NOMS::Command::UserAgent.new(@origin, :logger => @log)
     end
 
@@ -78,7 +78,7 @@ class NOMS::Command::Application
                 raise NOMS::Command::Error.new("Failed to request #{@origin}: #{response.status} #{response.reason}")
             end
         else
-            raise NOMS::Command::Error.new("Can't retrieve a '#{scheme}' url (#{@origin})")
+            raise NOMS::Command::Error.new("Can't retrieve a #{@origin.scheme.inspect} url (#{@origin.inspect})")
         end
 
         case @type
