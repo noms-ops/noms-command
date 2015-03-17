@@ -1,13 +1,33 @@
 noms
 ====
 
-**noms** is a remote command-line interface interpreter. It's designed to be a stable runtime environment for interpreting server-defined command-line interfaces for (principally) rest-like data stores (or for commands that are side-effect free, but *not* commands that change any state on the system on which the command runs).
+**noms** is a remote command-line interface interpreter. It's designed
+to be a stable runtime environment for interpreting server-defined
+command-line interfaces for (principally) rest-like data stores (or
+for commands that are side-effect free, but *not* commands that
+change any state on the system on which the command runs).
 
-The web browser is a platform in which the operator of a web service can implement a graphical user interface to data it controls. For example, it's a common pattern to offer access to services and data via a ReST or ReST-like interface, making http requests against a remote API understanding the HTTP verbs and returning results in the form of HTTP responses, header metadata and response bodies containing serialized data (e.g. JSON). Such interfaces are generally implemented in a combination of HTML documents and Javascript which modifies the document model of the HTML page(s).
+The web browser is a platform in which the operator of a web service
+can implement a graphical user interface to data it controls. For
+example, it's a common pattern to offer access to services and data
+via a ReST or ReST-like interface, making http requests against a
+remote API understanding the HTTP verbs and returning results in the
+form of HTTP responses, header metadata and response bodies containing
+serialized data (e.g. JSON). Such interfaces are generally implemented
+in a combination of HTML documents and Javascript which modifies the
+document model of the HTML page(s).
 
-**noms** enables an author to offer a command-line interface designed along the same pattern: structured documents modified by javascript programs, interpreted and rendered on the client. **noms** has sandboxing similar to web browsers (no modifying of local storage outside of restricted, application-specific local storage and automatic caching of javascript files).
+**noms** enables an author to offer a command-line interface designed
+along the same pattern: structured documents modified by javascript
+programs, interpreted and rendered on the client. **noms** has
+sandboxing similar to web browsers (no modifying of local storage
+outside of restricted, application-specific local storage and
+automatic caching of javascript files).
 
-**noms** is *not* a web browser and is not designed to offer terminal user interfaces like lynx or elinks. It is also *not* an interactive shell--it's designed to be used from a shell. It maintains authenticated sessions state when necessary.
+**noms** is *not* a web browser and is not designed to offer terminal
+user interfaces like lynx or elinks. It is also *not* an interactive
+shell--it's designed to be used from a shell. It maintains
+authenticated sessions state when necessary.
 
 Syntax
 ------
@@ -109,15 +129,20 @@ The following entities are allowed in the body of a **noms-v2** document.
 
     * **format**: The format in which to render, one of: **json**, **yaml**, **csv**, **lines** (default **lines**).
       The **lines** format is **noms'** built-in presentation of tabular data.
+
     * **columns**: An array of column specifiers. A column specifier is either a string with the name of
       the field to display, or an object which has the following attributes:
+
       * **field**: The object field to display in the column (*required*)
       * **heading**: The label to display in the column heading
       * **width**: The width of the column (data is space-padded to this width)
       * **align**: One of ``left`` or ``right``, determines data alignment within column
       * **maxwidth**: The maximum width of the data (values exceeding this length are truncated)
+
     * **labels**: Default ``true``; whether to display header row with field labels
+
     * **columns**: Field names, headings and widths
+
     * **data**: The objects to render
 
   * ``$type``: **object** An object has the following attributes:
@@ -125,8 +150,11 @@ The following entities are allowed in the body of a **noms-v2** document.
     * **format**: The format in which to render, one of: **json**,
       **yaml**, **record** (default **record**).  The **record**
       format is **noms'** built-in presentation of record data.
+
     * **fields**: The fields to display (default is all fields)
+
     * **labels**: Default ``true``, whether to display field labels
+
     * **data**: The object data
 
 Javascript Environment
@@ -137,23 +165,28 @@ Invoked scripts have access to the following global objects:
 * **window** - This has information about the terminal environment in
   which **noms** is being invoked. It has the following
   attributes/methods:
+
   * **height** - Height (if known)
   * **width**  - Width (if known)
   * **isatty** - true if the output stream is a terminal
   * **document** - The document global object
   * **alert** - Produce output on the error stream
+
 * **document** - The document object is the current document being
   rendered by **noms**. In addition to the attributes of the document
   itself, it has the following:
+
   * **argv** - The arguments being invoked. The first element of this
     array is the first argument passed to **noms** itself (not the
     script it ultimately fetches, but how it's invoked, similar to
     ``$1``
+
   * **exitcode** - The numeric exit code with which **noms** will
     exit. Initially 0.
-  * **body** - The text to display according to NOMS formattting.
-* **XMLHttpRequest** - An implementation of the XMLHttpRequest interface.
 
+  * **body** - The text to display according to NOMS formattting.
+
+* **XMLHttpRequest** - An implementation of the XMLHttpRequest interface.
 
 Web 1.0 vs Web 2.0
 ------------------
