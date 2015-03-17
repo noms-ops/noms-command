@@ -1,8 +1,6 @@
 noms
 ====
 
-**NOTE:** This is the *roadmap* for a second-generation of the 'noms' general purpose interface. It is a target for implementation and very much subject to change, and also none of it exists.
-
 **noms** is a remote command-line interface interpreter. It's designed to be a stable runtime environment for interpreting server-defined command-line interfaces for (principally) rest-like data stores (or for commands that are side-effect free, but *not* commands that change any state on the system on which the command runs).
 
 The web browser is a platform in which the operator of a web service can implement a graphical user interface to data it controls. For example, it's a common pattern to offer access to services and data via a ReST or ReST-like interface, making http requests against a remote API understanding the HTTP verbs and returning results in the form of HTTP responses, header metadata and response bodies containing serialized data (e.g. JSON). Such interfaces are generally implemented in a combination of HTML documents and Javascript which modifies the document model of the HTML page(s).
@@ -22,8 +20,6 @@ The basic way of invoking an **noms** command is as follows::
 
 Bookmarks
 ~~~~~~~~~
-
-Causes **noms** to forget its session state for the given application URL.
 
 * ``noms *bookmark*[/arg] ...``
 
@@ -52,21 +48,12 @@ Command given                     Equivalent command
 Implementation
 --------------
 
-If the type is ``text/plain``, it's simply displayed.
+If the type is ``text/*``, it's simply displayed.
 
-If the type is a recognized data serialization format (JSON or YAML):
+If the type is a recognized data serialization format (``application/json`` or ``application/yaml``), it's parsed as structured data. If the fetched content is a single object and the object has the top-level key '$doctype', it may be interpreted according to `Dynamic Doctype`_, below. Otherwise, it is assumed to be either a single object to display or a list of such, and **noms** will render the object or array using its default format (usually YAML).
 
-* application/json
-* application/x-json
-* text/json
-* application/yaml
-* application/x-yaml
-* text/yaml
-
-If the fetched content is a single object and the object has the top-level key '$doctype', it may be interpreted according to "Dynamic Doctypes", below. Otherwise, it is assumed to be either a single object to display or a list of such. Otherwise **noms** will render the object or array using its default format (usually YAML).
-
-Dynamic Doctypes
-~~~~~~~~~~~~~~~~
+Dynamic Doctype
+~~~~~~~~~~~~~~~
 
 The principle dynamic doctype is the ``noms-v2``, which is an object with the following top-level attributes:
 
@@ -77,135 +64,69 @@ The principle dynamic doctype is the ``noms-v2``, which is an object with the fo
   An ordered array of scripts to fetch and evaluate.
 
 ``$argv``
+  The arguments passed to the application. It's called ``$argv`` because ``$argv[0]`` contains the name by which the application is invoked (that is, the bookmark or URL).
 
 ``$exitcode``
+  The unix process exit code with which **noms** will exit at the completion of the command.
 
 ``$body``
-  The body of the document is the data to display. See `Output Description Notation`_ below.
+  The body of the document is the data to display. See `Output Formatting`_ below.
 
 From the perspective of javascript executing within the application, these are accessible as properties of the
 global **document** object.
 
-Output Description Notation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Output Formatting
+~~~~~~~~~~~~~~~~~
 
 The following entities are allowed in the body of a **noms-v2** document.
 
 * Arrays - Each item in the array is concatenated with a line-break between them.
-* Strings and numbers - A string or number is just displayed
-* Raw objects - Raw objects are rendered using **noms** default formatting (usually YAML)
+* Strings and numbers - A string or number is just displayed.
+* Raw objects - Raw objects are rendered using **noms'** default formatting (usually YAML)
 * Described objects - Described objects are data along with information on how to render them. A described object
   has a top-level attribute called **$type** which defines how the described object is rendered.
 
   * ``$type``: **object-list** An object list is a (usually) tabular list of objects with information on how
     wide to make the fields or how to otherwise serialize the objects. It has the following attributes:
 
-    * **format**: The format in which to render, one of: **json**, **yaml**, **text** (default **text**)
+    * **format**: The format in which to render, one of: **json**, **yaml**, **csv**, **lines** (default **lines**).
+      The **lines** format is **noms'** built-in presentation of tabular data.
+    * **columns**: An array of column specifiers. A column specifier is either a string with the name of
+      the field to display, or an object which has the following attributes:
+      * **field**: The object field to display in the column (*required*)
+      * **heading**: The label to display in the column heading
+      * **width**: The width of the column (data is space-padded to this width)
+      * **align**: One of ``left`` or ``right``, determines data alignment within column
+      * **maxwidth**: The maximum width of the data (values exceeding this length are truncated)
+    * **labels**: Default ``true``; whether to display header row with field labels
     * **columns**: Field names, headings and widths
     * **data**: The objects to render
 
-  * ``$type``: **object** An object described-object has the following attributes:
+  * ``$type``: **object** An object has the following attributes:
 
-    * **format**: The format in which to render, one of: **json**, **yaml**, **text** (default **yaml**)
+    * **format**: The format in which to render, one of: **json**, **yaml**, **record** (default **record**).
+      The **record** format is **noms'** built-in presentation of record data.
+    * **fields**: The fields to display (default is all fields)
+    * **labels**: Default ``true``, whether to display field labels
     * **data**: The object data
 
-Putting it all together
------------------------
-
-Example **noms** conversation::
-
-  bash$ noms https://cmdb.noms-example.com/cmdb.json --format=csv system fqdn~^m00
-
-  noms >> GET https://cmdb.noms-example.com/cmdb.json
-  noms << set 'document' to retrieved object:
-  { "$doctype": "appdoc",
-    "$script": [
-      { "$source": "lib/optconfig.js"},
-      { "$source": "noms/cmdb.js" },
-      { "$source": "noms/cli.js"} ],
-    "$body": null
-  }
-  noms << set 'document.argv' to ["https://cmdb.noms-example.com/cmdb.json", "--format=csv", "system", "fqdn~^m00"]
-  noms << set 'document.exitcode' to 0
-  noms >> GET https://cmdb.noms-example.com/lib/optconfig.js
-  noms << evaluate javascript option-parsing library optconfig.js
-  noms >> GET https://cmdb.noms-example.com/noms/cmdb.js
-  noms << evaluate noms cmdb client library
-  noms >> GET https://cmdb.noms-example.com/noms/cli.js
-  noms << evaluate noms cli library
-  cli.js << calls optconfig().parse with optspec
-  optconfig.js << sets document.argv to ["system", "fqdn~^m00"]
-  optconfig.js << sets document.options to { "format": "csv" }
-  cli.js << call noms_cmdb().query("system", "fqdn~^m00")
-  noms/cmdb.js << http.request("https://cmdb.noms-example.com/cmdb_api/v1/system/?fqdn~^m00")
-  cli.js << sets document.body to return objects to render
-  { "$doctype": "appdoc",
-    "$script": ["lib/optconfig.js", "noms/cmdb.js", "noms/cli.js"],
-    "$body": [{
-      "$type": "object-list",
-      "render": "csv",
-      "fields": [
-        { "name": "fqdn", "width": 36 },
-        { "name": "environment_name", "width": 16, "heading": "environment" },
-        { "name": "status", "width": 15 },
-        { "name": "roles", "width": 15 },
-        { "name": "ipaddress", "width": 15 },
-        { "name": "data_center_code": 11, "heading": "datacenter" } ],
-      "objects": [
-        { "fqdn": "m001.noms-example.com",
-          "environment_name": "production",
-          "status": "production",
-          "roles": "build",
-          "ipaddress": "10.8.9.10",
-          "data_center_code": "US2" },
-        { "fqdn": "m002.noms-example.com",
-          "environment_name": "testing",
-          "status": "allocated",
-          "roles": "webserver",
-          "ipaddress": "10.8.9.11",
-          "data_center_code": "US2" }
-        ]
-      }
-    ]
-  }
-
-  noms >> print output
-  fqdn,environment,status,roles,ipaddress,datacenter
-  "m001.noms-example.com",production,production,build,10.8.9.10,US2
-  "m002.noms-example.com",allocated,testing,webserver,10.8.9.11,US2
-
-  bash$ noms https://ncc-api.noms-example.com/ncc.json show m002.noms-example.com
-
-   { "$doctype": "appdoc",
-     "$script": ["noms/optconfig.js", 
-        { "name": "name", "width": 36 },
-        { "name": "status", "width": 10 },
-        { "name": "size", "width": 10 },
-        { "name": "image", "width": 15 },
-        { "name": "id", "width": 37 }
-     ]
-     "$body": null
-   }
-
-  name                                 status     size       image           id                                  
-  m0000291.noms-example.net            active     m1.small   deb6            d8c4c29e-785f-49ef-9d31-e4a71e9954fc
-  m0000290.noms-example.net            active     m1.small   deb7            33a88a1d-49a4-4c26-9a0c-b699703f5e64
-  m0000289.noms-example.net            active     m1.small   deb7            fd82f522-f305-4150-a969-1b8b9fd2d91d
-  m0000288.noms-example.net            error      m1.small   deb6            9d7f1c55-5f8f-4f98-9bf8-c1156a0506d2
-  m0000287.noms-example.net            active     m1.small   deb6            c4a6310d-4927-4e79-8170-443172eb9a7c
-  m0000286.noms-example.net            active     m1.small   centos6.2       88c654b6-77f2-4995-affb-c3a3bac16bd0
-  m0000277.noms-example.net            active     m1.small   deb6            e34e4a8f-81ef-42a3-a9c0-40933be7595f
+Javascript Environment
+----------------------
 
 Invoked scripts have access to the following global objects:
 
-* **window** - This has information about the terminal environment in which **noms** is being invoked. It has the following attributes:
+* **window** - This has information about the terminal environment in which **noms** is being invoked. It has the following attributes/methods:
   * **height** - Height (if known)
   * **width**  - Width (if known)
   * **isatty** - true if the output stream is a terminal
   * **document** - The document global object
+  * **alert** - Produce output on the error stream :tag:`TODO`
 * **document** - The document object is the current document being rendered by **noms**. In addition to the attributes of the document itself, it has the following:
   * **argv** - The arguments being invoked. The first element of this array is the first argument passed to **noms** itself (not the script it ultimately fetches, but how it's invoked, similar to ``$1``
   * **exitcode** - The numeric exit code with which **noms** will exit. Initially 0.
+  * **body** - The text to display according to NOMS formattting.
+* **XMLHttpRequest** - An implementation of the XMLHttpRequest interface.
+
 
 Web 1.0 vs Web 2.0
 ------------------
