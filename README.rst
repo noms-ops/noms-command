@@ -16,14 +16,18 @@ The basic way of invoking an **noms** command is as follows::
 
   noms *url* *options* *arguments*
 
-**noms** invokes the app at *url* with the given options and arguments, displaying the results.
+**noms** invokes the app at *url* with the given options and
+ arguments, displaying the results.
 
 Bookmarks
 ~~~~~~~~~
 
 * ``noms *bookmark*[/arg] ...``
 
-The **noms** command itself has a configuration file (``~/.noms``, ``/usr/local/etc/noms.conf``, ``/etc/noms.conf`` in that order) which defines bookmarks to different URLs. For example, given the following in ``/etc/noms.conf``::
+The **noms** command itself has a configuration file (``~/.noms``,
+``/usr/local/etc/noms.conf``, ``/etc/noms.conf`` in that order) which
+defines bookmarks to different URLs. For example, given the following
+in ``/etc/noms.conf``::
 
   { 
     "cmdb": "https://cmdb.noms-example.com/cmdb.json",
@@ -50,7 +54,13 @@ Implementation
 
 If the type is ``text/*``, it's simply displayed.
 
-If the type is a recognized data serialization format (``application/json`` or ``application/yaml``), it's parsed as structured data. If the fetched content is a single object and the object has the top-level key '$doctype', it may be interpreted according to `Dynamic Doctype`_, below. Otherwise, it is assumed to be either a single object to display or a list of such, and **noms** will render the object or array using its default format (usually YAML).
+If the type is a recognized data serialization format
+(``application/json`` or ``application/yaml``), it's parsed as
+structured data. If the fetched content is a single object and the
+object has the top-level key '$doctype', it may be interpreted
+according to `Dynamic Doctype`_, below. Otherwise, it is assumed to be
+either a single object to display or a list of such, and **noms** will
+render the object or array using its default format (usually YAML).
 
 Dynamic Doctype
 ~~~~~~~~~~~~~~~
@@ -64,7 +74,9 @@ The principle dynamic doctype is the ``noms-v2``, which is an object with the fo
   An ordered array of scripts to fetch and evaluate.
 
 ``$argv``
-  The arguments passed to the application. It's called ``$argv`` because ``$argv[0]`` contains the name by which the application is invoked (that is, the bookmark or URL).
+  The arguments passed to the application. It's called ``$argv``
+  because ``$argv[0]`` contains the name by which the application is
+  invoked (that is, the bookmark or URL).
 
 ``$exitcode``
   The unix process exit code with which **noms** will exit at the completion of the command.
@@ -72,22 +84,28 @@ The principle dynamic doctype is the ``noms-v2``, which is an object with the fo
 ``$body``
   The body of the document is the data to display. See `Output Formatting`_ below.
 
-From the perspective of javascript executing within the application, these are accessible as properties of the
-global **document** object.
+From the perspective of javascript executing within the application,
+these are accessible as properties of the global **document** object.
 
 Output Formatting
 ~~~~~~~~~~~~~~~~~
 
 The following entities are allowed in the body of a **noms-v2** document.
 
-* Arrays - Each item in the array is concatenated with a line-break between them.
+* Arrays - Each item in the array is concatenated with a line-break
+  between them.
 * Strings and numbers - A string or number is just displayed.
-* Raw objects - Raw objects are rendered using **noms'** default formatting (usually YAML)
-* Described objects - Described objects are data along with information on how to render them. A described object
-  has a top-level attribute called **$type** which defines how the described object is rendered.
+* Raw objects - Raw objects are rendered using **noms'** default
+  formatting (usually YAML)
+* Described objects - Described objects are data along with
+  information on how to render them. A described object has a
+  top-level attribute called **$type** which defines how the described
+  object is rendered.
 
-  * ``$type``: **object-list** An object list is a (usually) tabular list of objects with information on how
-    wide to make the fields or how to otherwise serialize the objects. It has the following attributes:
+  * ``$type``: **object-list** An object list is a (usually) tabular
+    list of objects with information on how wide to make the fields or
+    how to otherwise serialize the objects. It has the following
+    attributes:
 
     * **format**: The format in which to render, one of: **json**, **yaml**, **csv**, **lines** (default **lines**).
       The **lines** format is **noms'** built-in presentation of tabular data.
@@ -104,8 +122,9 @@ The following entities are allowed in the body of a **noms-v2** document.
 
   * ``$type``: **object** An object has the following attributes:
 
-    * **format**: The format in which to render, one of: **json**, **yaml**, **record** (default **record**).
-      The **record** format is **noms'** built-in presentation of record data.
+    * **format**: The format in which to render, one of: **json**,
+      **yaml**, **record** (default **record**).  The **record**
+      format is **noms'** built-in presentation of record data.
     * **fields**: The fields to display (default is all fields)
     * **labels**: Default ``true``, whether to display field labels
     * **data**: The object data
@@ -115,15 +134,23 @@ Javascript Environment
 
 Invoked scripts have access to the following global objects:
 
-* **window** - This has information about the terminal environment in which **noms** is being invoked. It has the following attributes/methods:
+* **window** - This has information about the terminal environment in
+  which **noms** is being invoked. It has the following
+  attributes/methods:
   * **height** - Height (if known)
   * **width**  - Width (if known)
   * **isatty** - true if the output stream is a terminal
   * **document** - The document global object
   * **alert** - Produce output on the error stream
-* **document** - The document object is the current document being rendered by **noms**. In addition to the attributes of the document itself, it has the following:
-  * **argv** - The arguments being invoked. The first element of this array is the first argument passed to **noms** itself (not the script it ultimately fetches, but how it's invoked, similar to ``$1``
-  * **exitcode** - The numeric exit code with which **noms** will exit. Initially 0.
+* **document** - The document object is the current document being
+  rendered by **noms**. In addition to the attributes of the document
+  itself, it has the following:
+  * **argv** - The arguments being invoked. The first element of this
+    array is the first argument passed to **noms** itself (not the
+    script it ultimately fetches, but how it's invoked, similar to
+    ``$1``
+  * **exitcode** - The numeric exit code with which **noms** will
+    exit. Initially 0.
   * **body** - The text to display according to NOMS formattting.
 * **XMLHttpRequest** - An implementation of the XMLHttpRequest interface.
 
@@ -131,13 +158,22 @@ Invoked scripts have access to the following global objects:
 Web 1.0 vs Web 2.0
 ------------------
 
-Like the "real web", **noms** commands can choose to do some calculation on the server and some on the client: **noms** doesn't care. You can use no ``$script`` tag at all and just calculate the entire document to be rendered in the client (though this currently odoesn't allow for argument interpretation, in the future the arguments may be passed in request headers or **noms** may allow a way for them to show up in a query string or POST request--but **noms** is not really a command-line http client either). This is up to the application designer.
+Like the "real web", **noms** commands can choose to do some
+calculation on the server and some on the client: **noms** doesn't
+care. You can use no ``$script`` tag at all and just calculate the
+entire document to be rendered in the client (though this currently
+odoesn't allow for argument interpretation, in the future the
+arguments may be passed in request headers or **noms** may allow a way
+for them to show up in a query string or POST request--but **noms** is
+not really a command-line http client either). This is up to the
+application designer.
 
 Example Application
 -------------------
 
-In the source code repository is an example **noms** application, **dnc** (a "do not call" list).
-The following is an example session with **dnc**::
+In the source code repository is an example **noms** application,
+**dnc** (a "do not call" list).  The following is an example session
+with **dnc**::
 
   bash$ noms http://localhost:8787/dnc.json
   Usage:
@@ -216,5 +252,15 @@ The following is an example session with **dnc**::
   {"id":10,"name":"Ian Welch","street":"555 Hamlet St","city":"Arlington, TX  76010","phone":"(817) 555-0555"}
   ]
 
-The example application is a very simple sinatra REST API to a data store consisting of a JSON file, and the static files
-comprising the Javascript source code and the **noms** application document.
+The example application is a very simple sinatra REST API to a data
+store consisting of a JSON file, and the static files comprising the
+Javascript source code and the **noms** application document.
+
+Running Examples
+----------------
+
+Use ``rake start`` to start the test webserver and run the following
+example applications (see the comments inside the
+``fixture/public/*.json`` files for syntax).
+
+
