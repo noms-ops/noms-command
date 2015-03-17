@@ -22,6 +22,7 @@ class NOMS::Command
     def initialize(argv)
         @argv = argv
         @log = Logger.new($stderr)
+        @log.formatter = lambda { |sev, timestamp, prog, msg| msg[-1].chr == "\n" ? msg : msg + "\n" }
     end
 
     def run

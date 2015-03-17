@@ -9,3 +9,8 @@
     [ $status -ne 0 ]
     echo "$output" | grep -q "noms error: noms command \"foo\" not found: not a URL or bookmark"
 }
+
+@test "command js error" {
+    run noms2 'data:application/json,{"$doctype":"noms-v2","$script":["window.alert(\"test error string\")"],"$body":[]}'
+    echo "$output" | grep -q "test error string"
+}

@@ -120,7 +120,7 @@ Invoked scripts have access to the following global objects:
   * **width**  - Width (if known)
   * **isatty** - true if the output stream is a terminal
   * **document** - The document global object
-  * **alert** - Produce output on the error stream :tag:`TODO`
+  * **alert** - Produce output on the error stream
 * **document** - The document object is the current document being rendered by **noms**. In addition to the attributes of the document itself, it has the following:
   * **argv** - The arguments being invoked. The first element of this array is the first argument passed to **noms** itself (not the script it ultimately fetches, but how it's invoked, similar to ``$1``
   * **exitcode** - The numeric exit code with which **noms** will exit. Initially 0.

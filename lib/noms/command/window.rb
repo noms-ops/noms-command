@@ -20,4 +20,8 @@ class NOMS::Command::Window
         $stdout.tty?
     end
 
+    def alert(msg)
+        @log.error msg
+    end
+
 end
