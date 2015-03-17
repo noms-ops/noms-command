@@ -78,8 +78,12 @@ class NOMS::Command::Application
 
         case @type
         when /^(application|text)\/(x-|)json/
-            @body = JSON.parse(@body)
-            if @body.has_key? '$doctype'
+            begin
+                @body = JSON.parse(@body)
+            rescue JSON::ParserError => e
+                raise NOMS::Command::Error.new("JSON error in #{@origin}: #{e.message}")
+            end
+            if @body.respond_to? :has_key? and @body.has_key? '$doctype'
                 @type = @body['$doctype']
                 @log.debug "Treating as #{@type} document"
                 @document = NOMS::Command::Document.new @body
@@ -153,6 +157,7 @@ class NOMS::Command::Application
             if @window.isatty
                 # Should this be here?
                 @log.warn "Unknown data of type '#{@type}' not sent to terminal"
+                []
             else
                 @body
             end
