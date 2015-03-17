@@ -10,7 +10,6 @@ describe NOMS::Command::XMLHttpRequest do
 
     before(:all) do
         # I'm going to go with this class variable for now
-        NOMS::Command::XMLHttpRequest.origin = 'http://localhost:8787/files/dnc.json'
 
         # Start the DNC application web server on port 8787
         setup_fixture 'test'
@@ -20,6 +19,11 @@ describe NOMS::Command::XMLHttpRequest do
     after(:all) do
         stop_server 'test'
         teardown_fixture 'test'
+    end
+
+    before(:each) do
+        NOMS::Command::XMLHttpRequest.origin = 'http://localhost:8787/files/dnc.json'
+        NOMS::Command::XMLHttpRequest.useragent = nil
     end
 
     context 'from ruby' do

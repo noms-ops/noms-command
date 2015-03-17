@@ -207,20 +207,93 @@ Invoked scripts have access to the following global objects:
   * **argv** - The arguments being invoked. The first element of this array is the first argument passed to **noms** itself (not the script it ultimately fetches, but how it's invoked, similar to ``$1``
   * **exitcode** - The numeric exit code with which **noms** will exit. Initially 0.
 
-Question
---------
-
-How much formatting should **noms** do? Web pages do a lot of formatting, and the Javascript influences it. So I was going to have
-a relatively rich formatting language (above). Now I'm wondering if maybe the body of the page should just be text, and the scripts are free to do with it what they will. In effect--have no 'special' formatting. No, it's probably better to at least have a default and not have to write formatting code for every case.
-
 Web 1.0 vs Web 2.0
 ------------------
 
 Like the "real web", **noms** commands can choose to do some calculation on the server and some on the client: **noms** doesn't care. You can use no ``$script`` tag at all and just calculate the entire document to be rendered in the client (though this currently odoesn't allow for argument interpretation, in the future the arguments may be passed in request headers or **noms** may allow a way for them to show up in a query string or POST request--but **noms** is not really a command-line http client either). This is up to the application designer.
 
-Possible Future Features
-------------------------
+Example Application
+-------------------
 
-Streaming: provide a way to have a streaming pipeline between data fetched by scripts in a "page" and the output stream of the **noms** command.
+In the source code repository is an example **noms** application, **dnc** (a "do not call" list).
+The following is an example session with **dnc**::
 
-Character sets
+  bash$ noms http://localhost:8787/dnc.json
+  Usage:
+     noms dnc add <field>=<value> [<field>=<value> [...]]
+     noms dnc remove <id>
+     noms check { <phone> | <name> }
+     noms list
+  bash$ noms http://localhost:8787/dnc.json list
+  name                 phone               
+  Manuela Irwin        (817) 555-0427      
+  Ronda Sheppard       (401) 555-0801      
+  Leonor Foreman       (401) 555-0428      
+  Emma Roman           (317) 555-0589      
+  Frieda English       (312) 555-0930      
+  Kitty Morton         (804) 555-0618      
+  Kathy Mcleod         (607) 555-0052      
+  Bettie Wolfe         (843) 555-0523      
+  Vanessa Conway       (404) 555-0885      
+  Ian Welch            (817) 555-0555      
+  10 objects
+  bash$ curl http://localhost:8787/dnc.json
+  { "$doctype": "noms-v2",
+    "$script": [{ "$source": "lib/commands.js" }],
+    "$body": [
+        "Usage:",
+        "   noms dnc add <field>=<value> [<field>=<value> [...]]",
+        "   noms dnc remove <id>",
+        "   noms check { <phone> | <name> }",
+        "   noms list"
+    ]
+  }
+  bash$ curl http://localhost:8787/lib/commands.js
+  if (document.argv.length > 1) {
+    var command = document.argv[1];
+    var xmlhttp = new XMLHttpRequest();
+
+    switch(command) {
+    case "list":
+        // unimplemented callbacks
+        xmlhttp.open("GET", "/dnc", false);
+        xmlhttp.send();
+        var records = eval('(' + xmlhttp.responseText + ')');
+        // Set the 'output' to the format specifier that
+        // tells noms to produce an object list output
+        document.body = [
+            {
+                '$type': 'object-list',
+                '$columns': [
+                    { 'field': 'name', 'width': 20 },
+                    { 'field': 'phone', 'width': 20 }
+                ],
+                '$data': records
+            },
+            records.length + " objects"
+        ];
+        break;
+    default:
+        document.exitcode = 8;
+        // need errors and warnings
+        document.body = [
+            document.argv[0] + ": Unknown command '" + command + "'"
+        ];
+    }
+  }
+  bash$ curl http://localhost:8787/files/data.json
+  [
+  {"id":1,"name":"Manuela Irwin","street":"427 Maple Ln","city":"Arlington, TX  76010","phone":"(817) 555-0427"},
+  {"id":2,"name":"Ronda Sheppard","street":"801 New First Rd","city":"Providence, RI  02940","phone":"(401) 555-0801"},
+  {"id":3,"name":"Leonor Foreman","street":"428 Willow Rd","city":"Providence, RI  02940","phone":"(401) 555-0428"},
+  {"id":4,"name":"Emma Roman","street":"589 Flanty Terr","city":"Anderson, IN  46018","phone":"(317) 555-0589"},
+  {"id":5,"name":"Frieda English","street":"930 Stonehedge Blvd","city":"Chicago, IL  60607","phone":"(312) 555-0930"},
+  {"id":6,"name":"Kitty Morton","street":"618 Manchester St","city":"Richmond, VA  23232","phone":"(804) 555-0618"},
+  {"id":7,"name":"Kathy Mcleod","street":"52 Wommert Ln","city":"Binghamton, NY  13902","phone":"(607) 555-0052"},
+  {"id":8,"name":"Bettie Wolfe","street":"523 Sharon Rd","city":"Coward, SC  29530","phone":"(843) 555-0523"},
+  {"id":9,"name":"Vanessa Conway","street":"885 Old Pinbrick Dr","city":"Athens, GA  30601","phone":"(404) 555-0885"},
+  {"id":10,"name":"Ian Welch","street":"555 Hamlet St","city":"Arlington, TX  76010","phone":"(817) 555-0555"}
+  ]
+
+The example application is a very simple sinatra REST API to a data store consisting of a JSON file, and the static files
+comprising the Javascript source code and the **noms** application document.
