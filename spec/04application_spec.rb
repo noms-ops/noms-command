@@ -1,6 +1,7 @@
 #!/usr/bin/env rspec
 
-require 'fileutils'
+require 'spec_helper'
+
 require 'uri'
 require 'noms/command/application'
 
@@ -8,15 +9,13 @@ describe NOMS::Command::Application do
 
     before(:all) do
         # Start the DNC application web server on port 8787
-        FileUtils.rm_r 'test' if File.directory? 'test'
-        system 'cp -R fixture test'
-        system("sh -c '#{RbConfig.ruby} test/dnc.rb >test/dnc.out 2>&1 &'")
-        sleep 2
+        setup_fixture
+        start_server
     end
 
     after(:all) do
-        Process.kill 'TERM', File.read('test/dnc.pid').to_i
-        FileUtils.rm 'test/dnc.pid' if File.exist? 'test/dnc.pid'
+        teardown_fixture
+        stop_server
     end
 
     describe '.new' do
@@ -38,6 +37,15 @@ describe NOMS::Command::Application do
             app.fetch!
             app.render!
             expect(app.display).to include 'Usage:'
+        end
+
+        it "should produce a list of DNC records" do
+            app = NOMS::Command::Application.new(NOMS::Command::Window.new($0),
+                                                 'http://localhost:8787/dnc.json',
+                                                 ['dnc', 'list'])
+            app.fetch!
+            app.render!
+            expect(app.display.split("\n").length).to be > 9
         end
 
     end

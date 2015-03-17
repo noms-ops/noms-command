@@ -1,12 +1,13 @@
 #!/usr/bin/env rspec
 
-require 'fileutils'
+require 'spec_helper'
+
 require 'noms/command'
 
 describe NOMS::Command do
 
     before(:all) do
-        FileUtils.mkdir_p 'test'
+        setup_fixture 'test'
         File.open('test/foo.txt', 'w') do |fh|
             fh << <<-TEXT.gsub(/^\s+/,'')
                 1: Test output
@@ -15,7 +16,7 @@ describe NOMS::Command do
         end
     end
 
-    after(:all)  { FileUtils.rm_r 'test' }
+    after(:all)  { teardown_fixture 'test' }
 
     describe '.run' do
         context 'with one file argument' do

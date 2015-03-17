@@ -104,6 +104,8 @@ class NOMS::Command::Application
             @window.document = @document
             @v8[:window] = @window
             @v8[:document] = @document
+            NOMS::Command::XMLHttpRequest.origin = @origin
+            NOMS::Command::XMLHttpRequest.useragent = @useragent
             @v8[:XMLHttpRequest] = NOMS::Command::XMLHttpRequest
             @document.script.each do |script|
                 if script.respond_to? :has_key? and script.has_key? '$source'
@@ -142,7 +144,7 @@ class NOMS::Command::Application
     def display
         case @type
         when 'noms-v2'
-            NOMS::Command::Formatter.new(@document.body).render
+            NOMS::Command::Formatter.new(_sanitize(@document.body)).render
         when 'noms-raw'
             @body.to_yaml
         when /^text(\/|$)/
@@ -154,6 +156,22 @@ class NOMS::Command::Application
             else
                 @body
             end
+        end
+    end
+
+    # Get rid of V8 stuff
+    def _sanitize(thing)
+        if thing.kind_of? V8::Array or thing.respond_to? :to_ary
+            thing.map do |item|
+                _sanitize item
+            end
+        elsif thing.respond_to? :keys
+            Hash[
+                 thing.keys.map do |key|
+                     [key, _sanitize(thing[key])]
+                 end]
+        else
+            thing
         end
     end
 

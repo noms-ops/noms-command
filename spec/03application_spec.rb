@@ -1,18 +1,17 @@
-#!ruby
+#!/usr/bin/env rspec
 
-require 'fileutils'
+require 'spec_helper'
 
 require 'noms/command/application'
 
 describe "NOMS::Command::Application" do
 
     before(:all) do
-        FileUtils.rm_r 'test' if File.directory? 'test'
-        system('cp -R fixture test')
+        setup_fixture 'test'
     end
 
     after(:all) do
-        FileUtils.rm_r 'test' if File.directory? 'test'
+        teardown_fixture 'test'
     end
 
     describe '.new' do

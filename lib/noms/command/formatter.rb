@@ -27,7 +27,7 @@ class NOMS::Command::Formatter
         elsif item.respond_to? :to_ary
             item.map { |it| render it }.join("\n")
         elsif item.respond_to? :has_key?
-            if item.has_key? '$type'
+            if item['$type']
                 case item['$type']
                 when 'object-list'
                     render_object_list item
@@ -80,7 +80,7 @@ class NOMS::Command::Formatter
             if spec.respond_to? :has_key?
                 new_spec.merge! spec
                 raise NOMS::Command::Error.new("Column must contain 'field': #{spec.inspect}") unless
-                    spec.has_key? 'field'
+                    spec['field']
                 new_spec['heading'] ||= new_spec['field']
             else
                 new_spec = {

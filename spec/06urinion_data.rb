@@ -1,4 +1,6 @@
-#!rspec
+#!/usr/bin/env rspec
+
+require 'spec_helper'
 
 require 'noms/command/urinion/data'
 

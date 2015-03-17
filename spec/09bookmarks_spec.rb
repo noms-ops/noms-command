@@ -1,5 +1,6 @@
 #!/usr/bin/env rspec
 
+require 'spec_helper'
 require 'fileutils'
 
 require 'noms/command'
@@ -8,6 +9,7 @@ describe NOMS::Command do
 
     before(:all) do
         # An application which echoes all arguments, not just argument arguments
+        setup_fixture 'test'
         @url = %q(data:application/json,{"$doctype":"noms-v2","$script":["document.body = document.argv.join(' ')"],"$body":[]})
         FileUtils.mkdir_p 'test/etc/noms' unless File.directory? 'test/etc/noms'
         File.open('test/etc/noms/bookmarks.json', 'w') { |fh| fh.puts({'echo1' => @url}.to_json) }

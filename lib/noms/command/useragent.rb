@@ -31,9 +31,13 @@ class NOMS::Command::UserAgent
     end
 
     def absolute_url(url)
-        url = URI.parse url unless url.respond_to? :scheme
-        url = URI.join(@origin, url) unless url.absolute?
-        url
+        begin
+            url = URI.parse url unless url.respond_to? :scheme
+            url = URI.join(@origin, url) unless url.absolute?
+            url
+        rescue StandardError => e
+            raise NOMS::Command::Error.new "Error parsing URL #{url} in context of #{@origin} (#{e.class}): #{e.message}"
+        end
     end
 
     # This library is for implementing host environment

@@ -1,5 +1,7 @@
 #!/usr/bin/env rspec
 
+require 'spec_helper'
+
 require 'noms/command/application'
 
 describe NOMS::Command::Application do

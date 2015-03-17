@@ -1,7 +1,10 @@
-#!rspec
+#!/usr/bin/env rspec
+
+require 'spec_helper'
+
+require 'yaml'
 
 require 'noms/command/formatter'
-require 'yaml'
 
 describe NOMS::Command::Formatter do
 
