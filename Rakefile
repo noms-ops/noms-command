@@ -22,6 +22,18 @@ task :start do
     system("sh -c '#{RbConfig.ruby} test/dnc.rb >test/dnc.out 2>&1 &'")
 end
 
+task :status do
+    begin
+        pid = File.read('test/dnc.pid').to_i
+        Process.kill 0, File.read('test/dnc.pid').to_i
+        puts "Test server running (PID #{pid})"
+    rescue Errno::ESRCH
+        puts "Test server not running on PID #{pid}"
+    rescue Errno::ENOENT
+        puts "Test server not running (no pidfile)"
+    end
+end
+
 task :stop do
     Process.kill 'TERM', File.read('test/dnc.pid').to_i
     FileUtils.rm 'test/dnc.pid'

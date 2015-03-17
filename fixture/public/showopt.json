@@ -1,4 +1,8 @@
 { "$doctype": "noms-v2",
+  "$comment": [
+      "noms2 http://localhost:8787/showopt.json",
+      "noms2 http://localhost:8787/showopt.json --debug --config /dev/null"
+  ],
   "$body": [
       "Usage:",
       "  showopt [--dry-run] [--config <s>] [--verbose]"

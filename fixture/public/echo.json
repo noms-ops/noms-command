@@ -1,4 +1,5 @@
 { "$doctype": "noms-v2",
+  "$comment": "noms2 http://localhost:8787/echo.json one two three",
   "$body": [],
   "$script": [
       "document.body = document.argv.slice(1).join(\" \")"

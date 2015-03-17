@@ -1,4 +1,8 @@
 { "$doctype": "noms-v2",
+  "$comment": [
+      "noms2 http://localhost:8787/dnc.json",
+      "noms2 http://localhost:8787/dnc.json list"
+  ],
   "$script": [{ "$source": "lib/commands.js" }],
   "$body": [
       "Usage:",
