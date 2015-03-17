@@ -1,0 +1,11 @@
+{ "$doctype": "noms-v2",
+  "$body": [
+      "Usage:",
+      "  showopt [--dry-run] [--config <s>] [--verbose]"
+  ],
+  "$script": [
+      { "$source": "https://rawgit.com/jfd/optparse-js/v1.0.5/lib/optparse.js",
+        "$comment": "Optparse.js 1.0.3 - https://github.com/jfd/optparse-js; via rawgit.com" },
+      { "$source": "lib/showopt.js" }
+  ]
+}
