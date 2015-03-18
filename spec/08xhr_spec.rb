@@ -78,10 +78,6 @@ describe NOMS::Command::XMLHttpRequest do
             end
         end
 
-        describe '#onreadystatechange' do
-
-        end
-
         describe '#abort' do
 
         end
@@ -101,15 +97,15 @@ describe NOMS::Command::XMLHttpRequest do
             it 'should retrieve web content' do
                 @v8.eval 'xhr.open("GET", "http://localhost:8787/files/data.json", false)'
                 @v8.eval 'xhr.send()'
-                expect(@v8.eval 'xhr.readyState').to eq 4
                 expect(@v8.eval 'xhr.responseText').to match(/^\[/)
+                expect(@v8.eval 'xhr.readyState').to eq 4
             end
 
             it 'should retrieve web content from relative URL' do
                 @v8.eval 'xhr.open("GET", "/files/data.json", false)'
                 @v8.eval 'xhr.send()'
-                expect(@v8.eval 'xhr.readyState').to eq 4
                 expect(@v8.eval 'xhr.responseText').to match(/^\[/)
+                expect(@v8.eval 'xhr.readyState').to eq 4
             end
         end
 
@@ -118,6 +114,21 @@ describe NOMS::Command::XMLHttpRequest do
         end
 
         describe '#onreadystatechange' do
+
+            it 'should be triggered by state change events' do
+                @v8.eval <<-JS
+                    var content = "";
+                    xhr.onreadystatechange = function() {
+                        if (this.readyState == this.DONE) {
+                             content = this.responseText;
+                        }
+                    }
+                JS
+                @v8.eval 'xhr.open("GET", "/files/data.json", true)'
+                @v8.eval 'xhr.send()'
+                @xhr.useragent.wait
+                expect(@v8.eval[:content]).to match(/^\[/)
+            end
 
         end
 

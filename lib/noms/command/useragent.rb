@@ -53,4 +53,10 @@ class NOMS::Command::UserAgent
         response
     end
 
+    # Wait for all asynchronous requests to complete.
+    # A stub while these are simulated
+    def wait(on=nil)
+        []
+    end
+
 end

@@ -43,13 +43,17 @@ class NOMS::Command::XMLHttpRequest
         @@ua = ua
     end
 
-    attr_accessor :readyState, :responseText, :headers
+    attr_accessor :responseText, :headers
 
     def initialize()
         @origin = @@origin
         @ua = @@ua || NOMS::Command::UserAgent.new(@origin)
         @headers = { }
         @readyState = 0
+    end
+
+    def useragent
+        @ua
     end
 
     def same_origin?(other)
@@ -63,6 +67,7 @@ class NOMS::Command::XMLHttpRequest
     def open(method, url, async=true, user=nil, password=nil)
         raise NOMS::Command::Error.new "origin of #{url} doesn't match application origin (#{@origin})" unless
             same_origin? @ua.absolute_url(url)
+        # Should we run onreadystatechange when resetting this? Not doing it for now.
         @readyState = 0
         @responseText = ''
         @method = method
@@ -70,6 +75,26 @@ class NOMS::Command::XMLHttpRequest
         @async = async
         @user = user
         @password = password
+    end
+
+    def onreadystatechange
+        @onreadystatechange
+    end
+
+    def onreadystatechange=(callback)
+        @onreadystatechange = callback
+    end
+
+    def readyState
+        @readyState
+    end
+
+    def readyState=(value)
+        @readyState = value
+        unless @onreadystatechange.nil?
+            self.methodcall(@onreadystatechange)
+        end
+        @readyState
     end
 
     def setRequestHeader(header, value)
@@ -92,20 +117,31 @@ class NOMS::Command::XMLHttpRequest
         DONE
     end
 
+    # NOMS::Command::UserAgent doesn't do async
+    # calls (yet) since httpclient doesn't do
+    # anything special with them and you can
+    # only busy-wait on them. So they're "simulated",
+    # and by "simulated" I mean "performed synchronously".
     def send(data=nil)
+        # @async ignored
         case @method
         when 'GET'
             response = @ua.get(@url, @headers)
+            self.readyState = OPENED
             if HTTP::Status.successful? response.status
-                @readyState = DONE
+                self.readyState = HEADERS_RECEIVED
+                self.readyState = LOADING
                 @responseText = response.content
+                self.readyState = DONE
             else
                 # Some kind of error? No?
+                self.readyState = HEADERS_RECEIVED
+                self.readyState = LOADING
                 @responseText = ''
-                @readyState = DONE
+                self.readyState = DONE
             end
         else
-            raise NOMS::Command::Error.new "Method '#{@method}' not understood"
+            raise NOMS::Command::Error.new "HTTP method '#{@method}' not understood"
         end
     end
 
