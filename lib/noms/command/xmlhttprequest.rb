@@ -135,10 +135,11 @@ class NOMS::Command::XMLHttpRequest
     def do_send(data=nil)
         # @async ignored
         @ua.add_redirect_check do |url|
-            same_origin? url
+            self.same_origin? url
         end
-        @response = @ua.request(@method, @url, data, @headers)
-        @ua.clear_redirect_checks
+        @response, landing_url = @ua.request(@method, @url, data, @headers)
+        # We don't need the 'landing' URL
+        @ua.pop_redirect_check
         self.readyState = OPENED
         self.readyState = HEADERS_RECEIVED
         self.readyState = LOADING

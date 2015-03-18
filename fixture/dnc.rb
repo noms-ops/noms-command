@@ -19,6 +19,19 @@ class DNC < Sinatra::Application
         File.open(File.join(settings.root, 'public', 'files', 'data.json'), 'w') { |fh| fh << data.to_json }
     end
 
+    helpers do
+        def require_auth
+            return if authorized?
+            headers['WWW-Authenticate'] = 'Basic realm="Authorization Required"'
+            halt 401, "Not authorized\n"
+        end
+
+        def authorized?
+            @auth ||=  Rack::Auth::Basic::Request.new(request.env)
+            @auth.provided? and @auth.basic? and @auth.credentials and @auth.credentials == ['testuser', 'testpass']
+        end
+    end
+
     get '/readme' do
         redirect 'https://raw.githubusercontent.com/en-jbrinkley/noms-command/master/README.rst', 'README'
     end
@@ -91,6 +104,11 @@ class DNC < Sinatra::Application
             write_data new_data
             204
         end
+    end
+
+    get '/auth/dnc.json' do
+        require_auth
+        redirect to('/dnc.json')
     end
 
     run! if app_file = $0

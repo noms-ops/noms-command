@@ -62,7 +62,11 @@ class NOMS::Command::Application
             raise NOMS::Command::Error.new("data URLs must contain application/json") unless @type == 'application/json'
             @body = @origin.data
         when /^http/
-            response = @useragent.get(@origin)
+            response, landing_url = @useragent.get(@origin)
+            new_url = landing_url
+            @origin = new_url
+            @useragent.origin = new_url
+            @log.debug "Setting origin to: #{@origin}"
             if response.ok?
                 # Unlike typical ReST data sources, this
                 # should very rarely fail unless there is
@@ -115,7 +119,8 @@ class NOMS::Command::Application
             @document.script.each do |script|
                 if script.respond_to? :has_key? and script.has_key? '$source'
                     # Parse relative URL and load
-                    response = @useragent.get(script['$source'])
+                    response, landing_url = @useragent.get(script['$source'])
+                    # Don't need landing_url
                     script_name = File.basename(@useragent.absolute_url(script['$source']).path)
                     script_ref = "#{script_index},#{script_name}"
                     if response.ok?

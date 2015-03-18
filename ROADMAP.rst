@@ -65,6 +65,9 @@ bodies
 OAuth                        **noms** will use httpclient's built-in OAuth
                              and prompt the user to authenticate with OAuth, and
                              use the OAuth token for subsequent requests.
+---------------------------- -----------------------------------------------------
+Client certificate           Prompt for passphrase or use authentication agent
+                             to provide client certificate.
 ============================ =====================================================
 
 Storage
