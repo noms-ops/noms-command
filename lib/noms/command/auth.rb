@@ -1,12 +1,14 @@
 #!ruby
 
 require 'noms/command/version'
+
 require 'httpclient'
 require 'etc'
 require 'highline/import'
 require 'json'
 require 'cgi'
 
+require 'noms/command/base'
 require 'noms/command/auth/identity'
 
 class NOMS
@@ -17,10 +19,41 @@ class NOMS::Command
 
 end
 
-class NOMS::Command::Auth
+class NOMS::Command::Auth < NOMS::Command::Base
 
-    def initialize(window, opts={})
-        @log = opts[:logger] || Logger.new($stderr)
+    def initialize(opts={})
+        @log = opts[:logger] || default_logger
+        @loaded = { }
+        (opts[:specified_identities] || []).each do |file|
+            maybe_id = read_identity_from file
+            raise NOMS::Command::Error.now "#{file} contains invalid identity (no 'id')" unless
+                maybe_id['id']
+            @loaded[maybe_id['id']] = maybe_id
+        end
+    end
+
+    def read_identity_from(file)
+        @log.debug "Reading identity file #{file}"
+        begin
+            # TODO: Encryption and passphrases
+            raise NOMS::Command::Error.new "Identity file #{file} does not exist" unless File.exist? file
+            s = File.stat file
+            raise NOMS::Command::Error.new "You don't own identity file #{file}" unless s.owned?
+            raise NOMS::Command::Error.new "Permissions on #{file} are too permissive" unless (s.mode & 077 == 0)
+            contents = File.read file
+            case contents[0].chr
+            when '{'
+                NOMS::Command::Auth::Identity.new(self, JSON.parse(contents))
+            else
+                raise NOMS::Command::Error.new "#{file} contains unsupported or corrupted data"
+            end
+        rescue StandardError => e
+            if e.is_a? NOMS::Command::Error
+                raise e
+            else
+                raise NOMS::Command::Error.new "Couldn't load identity from #{file} (#{e.class}): #{e.message}"
+            end
+        end
     end
 
     # TODO: Persistent auth creds
@@ -74,11 +107,11 @@ class NOMS::Command::Auth
     end
 
     def saved(identity_id)
-         nil
+        @loaded.has_key? identity_id
     end
 
     def retrieve(identity_id)
-        nil
+        @loaded[identity_id]
     end
 
 end

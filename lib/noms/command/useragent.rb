@@ -1,13 +1,14 @@
 #!ruby
 
+require 'noms/command/version'
+
 require 'openssl'
 require 'httpclient'
 require 'uri'
-require 'logger'
 require 'highline/import'
 
-require 'noms/command/version'
 require 'noms/command/auth'
+require 'noms/command/base'
 
 class NOMS
 
@@ -17,7 +18,7 @@ class NOMS::Command
 
 end
 
-class NOMS::Command::UserAgent
+class NOMS::Command::UserAgent < NOMS::Command::Base
 
     def initialize(origin, attrs={})
         @origin = origin
@@ -25,14 +26,11 @@ class NOMS::Command::UserAgent
         # TODO Replace with TOFU implementation
         @client.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
         @redirect_checks = [ ]
-        if attrs[:logger]
-            @log = attrs[:logger]
-        else
-            @log = Logger.new($stderr)
-            @log.level = Logger::WARN
-            @log.level = Logger::DEBUG if ENV['NOMS_DEBUG']
-        end
-        @auth = NOMS::Command::Auth.new :logger => @log
+        @log = attrs[:logger] || default_logger
+
+        @log.debug "(UserAgent) specified identities = #{attrs[:specified_identities]}"
+        @auth = NOMS::Command::Auth.new(:logger => @log,
+                                        :specified_identities => (attrs[:specified_identities] || []))
         # TODO: Set cookie jar to something origin-specific
         # TODO: Set user-agent to something nomsy
         # caching
@@ -81,17 +79,15 @@ class NOMS::Command::UserAgent
                 if tries > 0
                     @log.debug "loading authentication identity for #{url}"
                     identity = @auth.load(url, response)
-                    $stderr.puts "REMOVE @client.set_auth(#{identity['domain'].inspect}, #{identity['username'].inspect}, #{identity['password'].inspect})"
                     @client.set_auth(identity['domain'], identity['username'], identity['password'])
                     response, req_url = self.request(method, url, data, headers, tries - 1, identity)
                 end
             else
                 identity = @auth.load(url, response)
-                $stderr.puts "REMOVE @client.set_auth(#{identity['domain'].inspect}, #{identity['username'].inspect}, #{identity['password'].inspect})"
                 @client.set_auth(identity['domain'], identity['username'], identity['password'])
                 response, req_url = self.request(method, url, data, headers, 2, identity)
             end
-        when 302
+        when 302, 301
             new_url = response.header['location'].first
             if check_redirect new_url
                 @log.debug "redirect to #{new_url}"

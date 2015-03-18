@@ -1,0 +1,5 @@
+{ "id": "Authorization+Required=http://localhost:8787/",
+  "realm": "Authorization Required",
+  "domain": "http://localhost:8787/",
+  "username": "testuser",
+  "password": "testpass" }

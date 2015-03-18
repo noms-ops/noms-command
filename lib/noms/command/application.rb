@@ -1,6 +1,10 @@
 #!ruby
 
 require 'noms/command/version'
+
+require 'mime-types'
+require 'v8'
+
 require 'noms/command/window'
 require 'noms/command/useragent'
 require 'noms/command/error'
@@ -8,10 +12,7 @@ require 'noms/command/urinion'
 require 'noms/command/formatter'
 require 'noms/command/document'
 require 'noms/command/xmlhttprequest'
-
-require 'logger'
-require 'mime-types'
-require 'v8'
+require 'noms/command/base'
 
 class NOMS
 
@@ -21,7 +22,7 @@ class NOMS::Command
 
 end
 
-class NOMS::Command::Application
+class NOMS::Command::Application < NOMS::Command::Base
 
     # Should user-agent actually be here?
     attr_accessor :window, :options,
@@ -39,16 +40,11 @@ class NOMS::Command::Application
         @options = { }
         @type = nil
 
-        if attrs[:logger]
-            @log = attrs[:logger]
-        else
-            @log = Logger.new $stderr
-            @log.level = Logger::WARN
-            @log.level = Logger::DEBUG if (ENV['NOMS_DEBUG'] and ! ENV['NOMS_DEBUG'].empty?)
-        end
+        @log = attrs[:logger] || default_logger
 
         @log.debug "Application #{argv[0]} has origin: #{origin}"
-        @useragent = NOMS::Command::UserAgent.new(@origin, :logger => @log)
+        @useragent = NOMS::Command::UserAgent.new(@origin, :logger => @log,
+                                                  :specified_identities => (attrs[:specified_identities] || []))
     end
 
     def fetch!

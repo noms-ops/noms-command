@@ -1,9 +1,10 @@
 #!ruby
 
+require 'noms/command/version'
+
 require 'trollop'
 require 'logger'
 
-require 'noms/command/version'
 require 'noms/command/window'
 require 'noms/command/application'
 require 'noms/command/formatter'
@@ -35,10 +36,11 @@ class NOMS::Command
                   noms [noms-options] { bookmark | url } [options] [arguments]
                   noms-options:
             USAGE
+            opt :identity, "Identity file", :type => :string, :multi => true
             opt :debug, "Enable debug output"
             opt :verbose, "Enable verbose output"
             opt :nodefault_bookmarks, "Don't consult default bookmarks files",
-                :short => 'X',
+                :short => '-X',
                 :long => '--nodefault-bookmarks'
             opt :bookmarks, "Bookmark file location (can be specified multiple times)",
                 :type => :string,
@@ -47,8 +49,11 @@ class NOMS::Command
         end
 
         @opt = Trollop::with_standard_exception_handling parser do
+            parser.parse(@argv)
+        end
+
+        Trollop::with_standard_exception_handling parser do
             raise Trollop::HelpNeeded if @argv.empty?
-            parser.parse @argv
         end
 
         @opt[:debug] = true if ENV['NOMS_DEBUG'] and ! ENV['NOMS_DEBUG'].empty?
@@ -81,7 +86,8 @@ class NOMS::Command
         begin
             window = NOMS::Command::Window.new($0, :logger => @log)
             origin = @bookmark[@argv[0].split('/').first] || @argv[0]
-            app = NOMS::Command::Application.new(window, origin, @argv, :logger => @log)
+            app = NOMS::Command::Application.new(window, origin, @argv, :logger => @log,
+                                                 :specified_identities => @opt[:identity])
             app.fetch!                    # Retrieve page
             app.render!                   # Run scripts
             out = app.display

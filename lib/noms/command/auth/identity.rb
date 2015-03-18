@@ -10,21 +10,15 @@ class NOMS::Command
 
 end
 
-class NOMS::Command::Auth
+class NOMS::Command::Auth < NOMS::Command::Base
 
 end
 
-class NOMS::Command::Auth::Identity
+class NOMS::Command::Auth::Identity < NOMS::Command::Base
     include Enumerable
 
     def initialize(auth, h, attrs={})
-        if attrs[:logger]
-            @log = attrs[:logger]
-        else
-            @log = Logger.new($stderr)
-            @log.level = Logger::WARN
-            @log.level = Logger::DEBUG if ENV['NOMS_DEBUG']
-        end
+        @log = attrs[:logger] || default_logger
         @auth = auth
         @data = h
     end

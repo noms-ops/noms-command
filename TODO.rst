@@ -1,9 +1,10 @@
 TODO
 ====
 
-* Prompt for authentication
-* TOFU for SSL
-* Javascript errors: file (and line number/expression?)
+* SSL handling, TOFU for SSL
 * Javascript objects: ``console``, ``location``
-* Prompting from Javascript
+  * http://www.w3schools.com/jsref/obj_window.asp
+  * console.log()
+  * http://www.w3schools.com/jsref/obj_location.asp
+* Prompting from Javascript: window.prompt()
 * Flesh out example application CLI.

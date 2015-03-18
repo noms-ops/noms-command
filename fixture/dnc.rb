@@ -106,6 +106,10 @@ class DNC < Sinatra::Application
         end
     end
 
+    get '/alt/dnc.json' do
+        redirect to('/dnc.json')
+    end
+
     get '/auth/dnc.json' do
         require_auth
         redirect to('/dnc.json')
