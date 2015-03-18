@@ -14,3 +14,12 @@
     run noms2 'data:application/json,{"$doctype":"noms-v2","$script":["window.alert(\"test error string\")"],"$body":[]}'
     echo "$output" | grep -q "test error string"
 }
+
+@test "scriptable auth" {
+    rake start
+    chmod 0600 test/identity
+    noms2 -i test/identity http://localhost:8787/auth/dnc.json | grep -q Usage:
+    ec=$?
+    rake stop
+    [ $ec -eq 0 ]
+}
