@@ -3,6 +3,7 @@
 require 'spec_helper'
 
 require 'v8'
+require 'json'
 
 require 'noms/command/xmlhttprequest'
 
@@ -108,6 +109,61 @@ describe NOMS::Command::XMLHttpRequest do
                 expect(@v8.eval 'xhr.responseText').to match(/^\[/)
                 expect(@v8.eval 'xhr.readyState').to eq 4
             end
+
+            it 'should post objects to rest app' do
+                @v8[:newdata] = {
+                    'name' => 'Frances Simmons',
+                    'street' => '180 Tomkins Blcd',
+                    'city' => 'Minneapolis, MN  55401',
+                    'phone' => '(612) 555-0180'
+                }.to_json
+                @v8.eval 'xhr.open("POST", "/dnc", false);'
+                @v8.eval 'xhr.send(newdata);'
+                obj = JSON.parse(@v8.eval 'xhr.responseText')
+                expect(obj).to have_key 'id'
+
+                @v8.eval "xhr.open(\"GET\", \"/dnc/#{obj['id']}\", false);"
+                @v8.eval 'xhr.send();'
+                retobj = JSON.parse(@v8.eval 'xhr.responseText')
+                expect(retobj['name']).to eq 'Frances Simmons'
+            end
+
+            it 'should update objects in rest app' do
+                @v8.eval 'xhr.open("GET", "/dnc/1", false);'
+                @v8.eval 'xhr.send();'
+                obj = JSON.parse(@v8.eval 'xhr.responseText')
+                obj['phone'] = '(999) 555-9999'
+                @v8[:newobject] = obj.to_json
+
+                @v8.eval 'xhr.open("PUT", "/dnc/1", false);'
+                @v8.eval 'xhr.send(newobject);'
+                newobject = JSON.parse(@v8.eval 'xhr.responseText')
+                expect(newobject['id']).to eq 1
+                expect(newobject['phone']).to eq '(999) 555-9999'
+
+                @v8.eval 'xhr.open("GET", "/dnc/1", false);'
+                @v8.eval 'xhr.send();'
+                retobj = JSON.parse(@v8.eval 'xhr.responseText')
+                expect(retobj['phone']).to eq '(999) 555-9999'
+            end
+
+            it 'should delete objects in rest app' do
+                @v8.eval 'xhr.open("DELETE", "/dnc/2", false);'
+                @v8.eval 'xhr.send();'
+                expect(@v8.eval 'xhr.status').to eq 204
+
+                @v8.eval 'xhr.open("GET", "/dnc/2", false);'
+                @v8.eval 'xhr.send();'
+                expect(@v8.eval 'xhr.status').to eq 404
+            end
+
+            it 'should not follow cross-origin redirects' do
+                @v8.eval 'xhr.open("GET", "/readme", false);'
+                @v8.eval 'xhr.send();'
+                expect(@v8.eval 'xhr.status').to eq 302
+                expect(@v8.eval 'xhr.responseText').to eq 'README'
+            end
+
         end
 
         describe '#setRequestHeader' do

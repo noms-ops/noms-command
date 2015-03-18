@@ -19,6 +19,10 @@ class DNC < Sinatra::Application
         File.open(File.join(settings.root, 'public', 'files', 'data.json'), 'w') { |fh| fh << data.to_json }
     end
 
+    get '/readme' do
+        redirect 'https://raw.githubusercontent.com/en-jbrinkley/noms-command/master/README.rst', 'README'
+    end
+
     get '/dnc' do
         data = load_data
         [ 200, { 'Content-type' => 'application/json'},

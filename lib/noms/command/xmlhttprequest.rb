@@ -70,6 +70,7 @@ class NOMS::Command::XMLHttpRequest
         # Should we run onreadystatechange when resetting this? Not doing it for now.
         @readyState = 0
         @responseText = ''
+        @response = nil
         @method = method
         @url = url
         @async = async
@@ -119,7 +120,7 @@ class NOMS::Command::XMLHttpRequest
 
     # Oh, XMLHttpRequest, using send().
     def send(*vary)
-        if vary.size < 1 or vary[0].is_a? Symbol
+        if vary.size == 0 or (vary.size == 1 and ! vary[0].is_a? Symbol)
             do_send(*vary)
         else
             super
@@ -133,20 +134,32 @@ class NOMS::Command::XMLHttpRequest
     # and by "simulated" I mean "performed synchronously".
     def do_send(data=nil)
         # @async ignored
-        response = @ua.request(@method, @url, data, @headers)
-        self.readyState = OPENED
-        if HTTP::Status.successful? response.status
-            self.readyState = HEADERS_RECEIVED
-            self.readyState = LOADING
-            @responseText = response.content
-            self.readyState = DONE
-        else
-            # Some kind of error? No?
-            self.readyState = HEADERS_RECEIVED
-            self.readyState = LOADING
-            @responseText = ''
-            self.readyState = DONE
+        @ua.add_redirect_check do |url|
+            same_origin? url
         end
+        @response = @ua.request(@method, @url, data, @headers)
+        @ua.clear_redirect_checks
+        self.readyState = OPENED
+        self.readyState = HEADERS_RECEIVED
+        self.readyState = LOADING
+        @responseText = @response.content
+        self.readyState = DONE
+    end
+
+    def status
+        @response.status.to_i unless @response.nil?
+    end
+
+    def statusText
+        @response.status + ' ' + @response.reason unless @response.nil?
+    end
+
+    def getResponseHeader(header)
+        @response.header[header.downcase] unless @response.nil?
+    end
+
+    def getAllResponseHeaders
+        lambda { || @response.headers.map { |h, v| "#{h}: #{v}" }.join("\n") + "\n" }
     end
 
     def abort()

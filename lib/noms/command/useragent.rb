@@ -17,6 +17,7 @@ class NOMS::Command::UserAgent
     def initialize(origin, attrs={})
         @origin = origin
         @client = HTTPClient.new
+        @redirect_checks = [ ]
         if attrs[:logger]
             @log = attrs[:logger]
         else
@@ -28,6 +29,16 @@ class NOMS::Command::UserAgent
         # auth stuff
         # respond to 403 forbidden with prompting and
         # caching
+        @client.redirect_uri_callback = lambda do |uri, res|
+            check_redirect(uri)
+            @client.default_redirect_uri_callback(uri, res)
+        end
+    end
+
+    def check_redirect(url)
+        @redirect_checks.each do |check|
+            raise NOMS::Command::Error.new("Bad redirect to #{uri}") unless check.call uri
+        end
     end
 
     def absolute_url(url)
@@ -56,6 +67,14 @@ class NOMS::Command::UserAgent
     # A stub while these are simulated
     def wait(on=nil)
         []
+    end
+
+    def add_redirect_check(&block)
+        @redirect_checks << block
+    end
+
+    def clear_redirect_checks
+        @redirect_checks = [ ]
     end
 
 end
