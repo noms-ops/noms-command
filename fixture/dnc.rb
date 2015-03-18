@@ -25,8 +25,17 @@ class DNC < Sinatra::Application
 
     get '/dnc' do
         data = load_data
-        [ 200, { 'Content-type' => 'application/json'},
-            JSON.pretty_generate(data) ]
+        if request.query_string.empty?
+            [ 200, { 'Content-type' => 'application/json'},
+                JSON.pretty_generate(data) ]
+        else
+            [ 200, { 'Content-type' => 'application/json' },
+                JSON.pretty_generate(
+                                     data.select do |item|
+                                         params.keys.all? { |k| item[k.to_s] && item[k.to_s].to_s === params[k] }
+                                     end)
+            ]
+        end
     end
 
     get '/dnc/:id' do
