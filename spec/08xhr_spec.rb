@@ -90,6 +90,7 @@ describe NOMS::Command::XMLHttpRequest do
             @v8 = V8::Context.new
             @v8[:XMLHttpRequest] = NOMS::Command::XMLHttpRequest
             @v8.eval 'var xhr = new XMLHttpRequest()'
+            @xhr = @v8[:xhr]
         end
 
         describe '#open' do
@@ -127,12 +128,23 @@ describe NOMS::Command::XMLHttpRequest do
                 @v8.eval 'xhr.open("GET", "/files/data.json", true)'
                 @v8.eval 'xhr.send()'
                 @xhr.useragent.wait
-                expect(@v8.eval[:content]).to match(/^\[/)
+                expect(@v8[:content]).to match(/^\[/)
             end
 
         end
 
         describe '#abort' do
+
+            it 'cancels a request' do
+                # We don't really have true asynchronous requests,
+                # in particular we can't interrupt between calling
+                # send() and the readyState changing to 4. So
+                # this is kind of a no-op.
+
+                @v8.eval 'xhr.open("GET", "/files/data.json", true);'
+                @v8.eval 'xhr.abort();'
+                expect(@v8.eval 'xhr.readyState').to eq 0
+            end
 
         end
 

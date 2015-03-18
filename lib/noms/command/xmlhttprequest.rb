@@ -92,7 +92,7 @@ class NOMS::Command::XMLHttpRequest
     def readyState=(value)
         @readyState = value
         unless @onreadystatechange.nil?
-            self.methodcall(@onreadystatechange)
+            @onreadystatechange.methodcall self
         end
         @readyState
     end
@@ -117,12 +117,21 @@ class NOMS::Command::XMLHttpRequest
         DONE
     end
 
+    # Oh, XMLHttpRequest, using send().
+    def send(*vary)
+        if vary.size < 1 or vary[0].is_a? Symbol
+            do_send(*vary)
+        else
+            super
+        end
+    end
+
     # NOMS::Command::UserAgent doesn't do async
     # calls (yet) since httpclient doesn't do
     # anything special with them and you can
     # only busy-wait on them. So they're "simulated",
     # and by "simulated" I mean "performed synchronously".
-    def send(data=nil)
+    def do_send(data=nil)
         # @async ignored
         case @method
         when 'GET'
@@ -143,6 +152,10 @@ class NOMS::Command::XMLHttpRequest
         else
             raise NOMS::Command::Error.new "HTTP method '#{@method}' not understood"
         end
+    end
+
+    def abort()
+        lambda { || @readyState = 0 }
     end
 
 end
