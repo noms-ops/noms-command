@@ -133,24 +133,19 @@ class NOMS::Command::XMLHttpRequest
     # and by "simulated" I mean "performed synchronously".
     def do_send(data=nil)
         # @async ignored
-        case @method
-        when 'GET'
-            response = @ua.get(@url, @headers)
-            self.readyState = OPENED
-            if HTTP::Status.successful? response.status
-                self.readyState = HEADERS_RECEIVED
-                self.readyState = LOADING
-                @responseText = response.content
-                self.readyState = DONE
-            else
-                # Some kind of error? No?
-                self.readyState = HEADERS_RECEIVED
-                self.readyState = LOADING
-                @responseText = ''
-                self.readyState = DONE
-            end
+        response = @ua.request(@method, @url, data, @headers)
+        self.readyState = OPENED
+        if HTTP::Status.successful? response.status
+            self.readyState = HEADERS_RECEIVED
+            self.readyState = LOADING
+            @responseText = response.content
+            self.readyState = DONE
         else
-            raise NOMS::Command::Error.new "HTTP method '#{@method}' not understood"
+            # Some kind of error? No?
+            self.readyState = HEADERS_RECEIVED
+            self.readyState = LOADING
+            @responseText = ''
+            self.readyState = DONE
         end
     end
 

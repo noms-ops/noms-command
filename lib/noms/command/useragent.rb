@@ -40,17 +40,16 @@ class NOMS::Command::UserAgent
         end
     end
 
-    # This library is for implementing host environment
-    # HTTP conversations (so far), not for implementing
-    # Javascript-based XMR, the same-origin policy is
-    # not important here. In other words, this is how
-    # noms initial page is fetched, and script tags
-    def get(url, headers={})
-        get_url = absolute_url(url)
-        @log.debug "GET #{get_url}"
-        response = @client.get(get_url, '', headers)
+    def request(method, url, data=nil, headers={})
+        req_url = absolute_url(url)
+        @log.debug "#{method} #{req_url}" + (headers.empty? ? '' : headers.inspect)
+        response = @client.request(method.to_s.upcase, req_url, '', data, headers)
         @log.debug "-> #{response.status} #{response.reason} (#{response.content.size} bytes of #{response.contenttype})"
         response
+    end
+
+    def get(url, headers={})
+        request('GET', url, nil, headers)
     end
 
     # Wait for all asynchronous requests to complete.
