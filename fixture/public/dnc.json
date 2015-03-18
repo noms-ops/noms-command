@@ -3,12 +3,20 @@
       "noms2 http://localhost:8787/dnc.json",
       "noms2 http://localhost:8787/dnc.json list"
   ],
-  "$script": [{ "$source": "lib/commands.js" }],
+  "$script": [
+      { "$source": "https://rawgit.com/jfd/optparse-js/v1.0.5/lib/optparse.js",
+        "$comment": "Optparse.js 1.0.3 - https://github.com/jfd/optparse-js; via rawgit.com" },
+      { "$source": "https://rawgit.com/douglascrockford/JSON-js/master/json2.js",
+        "$comment": "JSON in JavaScript - https://github.com/douglascrockford/JSON-js" },
+      { "$source": "lib/noms-args.js" },
+      { "$source": "lib/dnc.js" }
+  ],
   "$body": [
       "Usage:",
+      "   noms dnc query <field>=<value>",
       "   noms dnc add <field>=<value> [<field>=<value> [...]]",
       "   noms dnc remove <id>",
-      "   noms check { <phone> | <name> }",
-      "   noms list"
+      "   noms dnc check { <phone> | <name> }",
+      "   noms dnc list"
   ]
 }

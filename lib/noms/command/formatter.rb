@@ -71,7 +71,7 @@ class NOMS::Command::Formatter
         when 'yaml'
             filter_object_list(objlist).to_yaml
         when 'json'
-            filter_object_list(objlist).to_json
+            JSON.pretty_generate(filter_object_list(objlist))
         when 'csv'
             render_csv objlist
         else
@@ -80,13 +80,10 @@ class NOMS::Command::Formatter
     end
 
     def filter_object_list(objlist)
-
-        columns = objlist['$columns'].map do |spec|
-            spec.respond_to?(:has_key?) ? spec['field'] : spec
-        end
+        columns = normalize_columns objlist['$columns']
 
         objlist['$data'].map do |object|
-            Hash[columns.map { |c| object[c] }]
+            Hash[columns.map { |c| [c['heading'], object[c['field']]] }]
         end
     end
 

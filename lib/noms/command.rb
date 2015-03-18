@@ -32,7 +32,7 @@ class NOMS::Command
             version NOMS::Command::VERSION
             banner <<-USAGE.gsub(/^\s{16}/,'')
                 Usage:
-                  noms [noms-options] { login | logout | bookmark | url } [options] [arguments]
+                  noms [noms-options] { bookmark | url } [options] [arguments]
                   noms-options:
             USAGE
             opt :debug, "Enable debug output"
@@ -54,7 +54,7 @@ class NOMS::Command
         @opt[:debug] = true if ENV['NOMS_DEBUG'] and ! ENV['NOMS_DEBUG'].empty?
 
         default_bookmarks =
-            [ '~/.noms/bookmarks.json',
+            [ File.join(ENV['HOME'], '.noms/bookmarks.json'),
             '/usr/local/etc/noms/bookmarks.json',
             '/etc/noms/bookmarks.json'].select { |f| File.exist? f }
 

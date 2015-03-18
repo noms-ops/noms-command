@@ -111,17 +111,20 @@ class NOMS::Command::Application
             NOMS::Command::XMLHttpRequest.origin = @origin
             NOMS::Command::XMLHttpRequest.useragent = @useragent
             @v8[:XMLHttpRequest] = NOMS::Command::XMLHttpRequest
+            script_index = 0
             @document.script.each do |script|
                 if script.respond_to? :has_key? and script.has_key? '$source'
                     # Parse relative URL and load
                     response = @useragent.get(script['$source'])
+                    script_name = File.basename(@useragent.absolute_url(script['$source']).path)
+                    script_ref = "#{script_index},#{script_name}"
                     if response.ok?
                         case response.contenttype
                         when /^(application|text)\/(x-|)javascript/
                             begin
                                 @v8.eval response.content
                             rescue StandardError => e
-                                @log.warn "Javascript error: #{e.message}"
+                                @log.warn "Javascript[#{script_ref}] error: #{e.message}"
                                 @log.debug e.backtrace.join("\n")
                             end
                         else
@@ -134,14 +137,24 @@ class NOMS::Command::Application
                     end
                 else
                     # It's javascript text
+                    script_ref = "#{script_index},\"#{abbrev(script)}\""
                     begin
                         @v8.eval script
                     rescue StandardError => e
-                        @log.warn "Javascript error: #{e.message}"
+                        @log.warn "Javascript[#{script_ref}] error: #{e.message}"
                         @log.debug e.backtrace.join("\n")
                     end
                 end
+                script_index += 1
             end
+        end
+    end
+
+    def abbrev(s, limit=10)
+        if s.length > (limit - 3)
+            s[0 .. (limit - 3)] + '...'
+        else
+            s
         end
     end
 
