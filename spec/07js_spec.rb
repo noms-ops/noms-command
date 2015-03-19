@@ -67,7 +67,7 @@ describe NOMS::Command::Application do
                 app = make_script_app("console.log('test debug output')", :logger => log)
                 app.fetch!
                 app.render!
-                expect(logcatcher.string).to match(/^D,.*test debug output$/)
+                expect(logcatcher.string).to match(/^D,.*test debug output/)
             end
 
         end

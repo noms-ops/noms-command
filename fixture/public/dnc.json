@@ -14,9 +14,9 @@
   "$body": [
       "Usage:",
       "   noms dnc query [<field>=<value> [...]] [<field> [...]]",
-      "   noms dnc list [<field> [...]]"
+      "   noms dnc list [<field> [...]]",
       "   noms dnc add <field>=<value> [<field>=<value> [...]] (unimplemented)",
       "   noms dnc remove <id> (unimplemented)",
-      "   noms dnc check { <phone> | <name> } (unimplemented)",
+      "   noms dnc check { <phone> | <name> } (unimplemented)"
   ]
 }
