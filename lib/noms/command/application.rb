@@ -111,8 +111,8 @@ class NOMS::Command::Application < NOMS::Command::Base
             @window.document = @document
             @v8[:window] = @window
             @v8[:document] = @document
-            @v8.eval 'function alert(s) { window.alert(s); }'
-            @v8.eval 'function prompt(s, echo) { window.prompt(s, echo); }'
+            @v8.eval 'var alert = function (s) { window.alert(s); };'
+            @v8.eval 'var prompt = function (s, echo) { window.prompt(s, echo); };'
             @v8.eval 'var location = window.location;'
             @v8.eval 'var console = window.console;'
             NOMS::Command::XMLHttpRequest.origin = @origin

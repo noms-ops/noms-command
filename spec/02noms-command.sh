@@ -15,6 +15,12 @@
     echo "$output" | grep -q "test error string"
 }
 
+@test "command js error (different namespace)" {
+    run noms2 'data:application/json,{"$doctype":"noms-v2","$script":["alert(\"test error string\")"],"$body":[]}'
+    echo "$output" | grep -q "test error string"
+}
+
+
 @test "scriptable auth" {
     rake start
     chmod 0600 test/identity

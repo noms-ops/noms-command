@@ -2,6 +2,6 @@
   "$comment": "noms2 http://localhost:8787/echo.json one two three",
   "$body": [],
   "$script": [
-      "document.body = document.argv.slice(1).join(\" \")"
+      "if (document.argv.length > 1) { document.body = document.argv.slice(1).join(\" \"); } else { line1 = prompt('String to echo: '); line2 = prompt(\"Password to echo (don't use real one): \", false); document.body = [line1, line2]; }"
   ]
 }

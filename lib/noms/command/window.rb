@@ -2,6 +2,8 @@
 
 require 'noms/command/version'
 
+require 'highline/import'
+
 require 'noms/command/base'
 
 class NOMS
@@ -32,6 +34,14 @@ class NOMS::Command::Window < NOMS::Command::Base
 
     def alert(msg)
         @log.error msg
+    end
+
+    def prompt(prompt_text, echo=true)
+        echo = true if echo.nil?
+        @log.debug "prompt(#{prompt_text.inspect}, #{echo.inspect})"
+        v = ask(prompt_text) { |p| p.echo = false unless echo }
+        @log.debug "-> #{v}"
+        v
     end
 
 end
