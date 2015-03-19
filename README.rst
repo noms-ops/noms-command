@@ -54,18 +54,18 @@ Syntax
 
 The basic way of invoking a **noms** command is as follows::
 
-  noms *url* *options* *arguments*
+  noms <url> <options> <arguments>
 
 **noms** invokes the app at *url* with the given options and
- arguments, displaying the results.
+arguments, displaying the results.
 
 **noms** has its own options, which can be given before the
-*url*, and are available when invoking ``noms --help`.
+*url*, and are available when invoking ``noms --help``.
 
 Bookmarks
 ~~~~~~~~~
 
-* ``noms *bookmark*[/arg] ...``
+* ``noms <bookmark>[/extra] ...``
 
 **noms** bookmarks are stored, by default, in ``~/.noms/bookmarks.json``,
 ``/usr/local/etc/noms/bookmarks.json``, and ``/etc/noms/bookmarks.json``
@@ -101,7 +101,8 @@ strictness policies may be configurable in a file, but the point of
 **noms** is to remove the distribution of thick client libraries that
 try to abstract away server-side interfaces and the configurations
 they require, so it would defeat part of its purpose to allow rich
-configuration of things like default values for objects and so forth.
+configuration of things like default values for objects, extra
+(application-level) connection or protocol information and so forth.
 
 Implementation
 --------------
@@ -123,7 +124,7 @@ Authentication
 --------------
 
 *NOTE:* This is under active development, expect it to change
- frequently.
+frequently.
 
 **noms** supports Basic authentication. It will prompt the user for
 a username and password when required. A saved identity file can be
@@ -157,7 +158,7 @@ From the perspective of javascript executing within the application,
 these are accessible as properties of the global **document** object
 (e.g., ``document.argv`` is the array of arguments given on the **noms**
 command line; Javascript can set ``document.exitcode`` to determine
-**noms'** exit code.
+**noms'** exit code).
 
 Output Formatting
 ~~~~~~~~~~~~~~~~~
@@ -251,7 +252,7 @@ Scripts have access to the following global objects:
   * **argv** - The arguments being invoked. The first element of this
     array is the first argument passed to **noms** itself (not the
     script it ultimately fetches, but how it's invoked, similar to
-    ``$1``.
+    ``$0``.
 
   * **exitcode** - The numeric exit code with which **noms** will
     exit. Initially 0.
@@ -272,10 +273,9 @@ Like the "real web", **noms** commands can choose to do some
 calculation on the server and some on the client: **noms** doesn't
 care. You can use no ``$script`` tag at all and just calculate the
 entire document to be rendered in the client (though this currently
-doesn't allow for argument interpretation, in the future the
-arguments may be passed in request headers or **noms** may allow a way
-for them to show up in a query string or POST request--but **noms** is
-not really a command-line http client either). This is up to the
+doesn't allow for argument interpretation, in the future the arguments
+may be passed in request headers or **noms** may allow a way for them
+to show up in a query string or POST request). This is up to the
 application designer.
 
 Example Application
@@ -366,11 +366,38 @@ The example application is a very simple sinatra REST API to a data
 store consisting of a JSON file, and the static files comprising the
 Javascript source code and the **noms** application document.
 
-Running Examples
-----------------
+Hacking/Running Examples
+------------------------
 
 Use ``rake start`` to start the test webserver and run the
 example applications (see the comments inside the
 ``fixture/public/*.json`` files for syntax).
 
 Start with ``noms2 http://localhost:8787/echo.json hello world``.
+
+Workflow
+~~~~~~~~
+
+Set up your environment::
+
+  mkdir ~/.noms
+  echo '{ "dnc": "http://localhost:8787/dnc.json" }' >~/.noms/bookmarks.json
+  export PATH=`pwd`/bin:$PATH
+  noms2            # NOMS usage message
+  noms2 dnc        # dnc usage message
+
+Do ``rake start`` to start the webserver: web root is is ``test/``.
+
+Hack files in:
+
+* ``lib/`` - Ruby files for ``noms2`` command
+* ``fixture/dnc.rb`` - Sinatra app which is webserver for dnc app (serves
+  static files and implements rest interface).
+* ``fixture/public/dnc.json`` - App document for 'dnc' subcommand.
+* ``fixture/public/lib``      - Javascript files, ``dnc.js`` implements
+                                dnc operations
+
+Do ``rake sync`` to sync over updated files from ``fixture`` and test.
+
+``noms2 -d`` produces debugging showing full stack traces for Javascript
+errors, ``console.log()`` output and web traffic.

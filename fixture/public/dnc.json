@@ -8,15 +8,15 @@
         "$comment": "Optparse.js 1.0.3 - https://github.com/jfd/optparse-js; via rawgit.com" },
       { "$source": "https://rawgit.com/douglascrockford/JSON-js/master/json2.js",
         "$comment": "JSON in JavaScript - https://github.com/douglascrockford/JSON-js" },
-      { "$source": "lib/noms-args.js" },
+      { "$source": "lib/nomsargs.js" },
       { "$source": "lib/dnc.js" }
   ],
   "$body": [
       "Usage:",
-      "   noms dnc query <field>=<value>",
-      "   noms dnc add <field>=<value> [<field>=<value> [...]]",
-      "   noms dnc remove <id>",
-      "   noms dnc check { <phone> | <name> }",
-      "   noms dnc list"
+      "   noms dnc query [<field>=<value> [...]] [<field> [...]]",
+      "   noms dnc list [<field> [...]]"
+      "   noms dnc add <field>=<value> [<field>=<value> [...]] (unimplemented)",
+      "   noms dnc remove <id> (unimplemented)",
+      "   noms dnc check { <phone> | <name> } (unimplemented)",
   ]
 }

@@ -54,11 +54,29 @@ class NOMS::Command::Window::Console < NOMS::Command::Base
 
     # Some implementations have a kind of format string. I don't
     def log(*items)
-        @log.debug(items.map { |s| _sanitize(s) }.join(', '))
+        @log.debug(items.map { |s| _string(s) }.join(', '))
     end
 
-    def _sanitize(s)
-        s.respond_to?(:to_str) ? s : s.to_json
+    def _string(s)
+        s = _sanitize(s)
+        s.kind_of?(Enumerable) ? s.to_json : s.inspect
+    end
+
+    # Get rid of V8 stuff
+    def _sanitize(thing)
+        # This really needs to go into a class
+        if thing.kind_of? V8::Array or thing.respond_to? :to_ary
+            thing.map do |item|
+                _sanitize item
+            end
+        elsif thing.respond_to? :keys
+            Hash[
+                 thing.keys.map do |key|
+                     [key, _sanitize(thing[key])]
+                 end]
+        else
+            thing
+        end
     end
 
 end
