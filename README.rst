@@ -383,6 +383,8 @@ Set up your environment::
   mkdir ~/.noms
   echo '{ "dnc": "http://localhost:8787/dnc.json" }' >~/.noms/bookmarks.json
   export PATH=`pwd`/bin:$PATH
+  expert RUBYLIB=lib
+  bundle install
   noms2            # NOMS usage message
   noms2 dnc        # dnc usage message
 
