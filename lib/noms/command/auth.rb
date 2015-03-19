@@ -107,11 +107,11 @@ class NOMS::Command::Auth < NOMS::Command::Base
     end
 
     def saved(identity_id)
-        @loaded.has_key? identity_id
+        NOMS::Command::Auth::Identity.saved? identity_id
     end
 
     def retrieve(identity_id)
-        @loaded[identity_id]
+        NOMS::Command::Auth::Identity.renew(identity_id)
     end
 
 end
