@@ -1,6 +1,8 @@
 noms
 ====
 
+**Script The Service-Oriented Architecture**
+
 **noms** is a remote command-line interface interpreter. It's designed
 to be a stable runtime environment for interpreting server-defined
 command-line interfaces for (principally) rest-like data stores (or
@@ -27,27 +29,48 @@ automatic caching of javascript files).
 **noms** is *not* a web browser and is not designed to offer terminal
 user interfaces like lynx or elinks. It is also *not* an interactive
 shell--it's designed to be used from a shell. It maintains
-authenticated sessions state when necessary.
+authenticated session state when necessary. It is *not* a wget_
+or curl_ replacement but it can be useful for discovering and
+using ReST data stores.
+
+.. _wget: https://www.gnu.org/s/wget
+
+.. _curl: http://curl.haxx.se/
+
+The name **noms** comes from `New Operations Management Stack`_
+because its principal and first use is as a CLI and scripting
+component for the various network-accessible APIs comprising that
+project. It is, in part, a future replacement for noms-client_ as it
+solves some of the software distribution and local configuration
+issues caused by that command (though it's likely the NOMS component
+client libraries will remain).
+
+.. _`New Operations Management Stack`: https://github.com/evernote/noms-client/wiki
+
+.. _noms-client: https://github.com/evernote/noms-client
 
 Syntax
 ------
 
-The basic way of invoking an **noms** command is as follows::
+The basic way of invoking a **noms** command is as follows::
 
   noms *url* *options* *arguments*
 
 **noms** invokes the app at *url* with the given options and
  arguments, displaying the results.
 
+**noms** has its own options, which can be given before the
+*url*, and are available when invoking ``noms --help`.
+
 Bookmarks
 ~~~~~~~~~
 
 * ``noms *bookmark*[/arg] ...``
 
-The **noms** command itself has a configuration file (``~/.noms``,
-``/usr/local/etc/noms.conf``, ``/etc/noms.conf`` in that order) which
-defines bookmarks to different URLs. For example, given the following
-in ``/etc/noms.conf``::
+**noms** bookmarks are stored, by default, in ``~/.noms/bookmarks.json``,
+``/usr/local/etc/noms/bookmarks.json``, and ``/etc/noms/bookmarks.json``
+(in that order). These are strict correspondences between a short
+alias and a URL to load for an app::
 
   { 
     "cmdb": "https://cmdb.noms-example.com/cmdb.json",
@@ -55,6 +78,9 @@ in ``/etc/noms.conf``::
     "nagios": "https://nagios.noms-example.com/nagui.json",
     "nag": "https://nagios.noms-exmaple.com/nagui.json"
   }
+
+Additional bookmark sources can be given with the ``bookmarks`` option. All
+bookmarks from valid sources are merged.
 
 When invoked in the following ways, it's the equivalent to the command on the right:
 
@@ -69,29 +95,52 @@ Command given                     Equivalent command
                                   (``document.argv[0]`` set to ``nag``)
 ================================= ==================================================================
 
+This will probably be the limit of **noms'** client-side
+configuration. Other things like cache directories and authentication
+strictness policies may be configurable in a file, but the point of
+**noms** is to remove the distribution of thick client libraries that
+try to abstract away server-side interfaces and the configurations
+they require, so it would defeat part of its purpose to allow rich
+configuration of things like default values for objects and so forth.
+
 Implementation
 --------------
 
+When **noms** retrieves an application URL, it uses the following
+logic to determine how to output the result.
+
 If the type is ``text/*``, it's simply displayed.
 
-If the type is a recognized data serialization format
-(``application/json`` or ``application/yaml``), it's parsed as
+If the type is a recognized data serialization format (basically,
+``application/json`` or ``application/yaml``), it's parsed as
 structured data. If the fetched content is a single object and the
 object has the top-level key '$doctype', it may be interpreted
 according to `Dynamic Doctype`_, below. Otherwise, it is assumed to be
-either a single object to display or a list of such, and **noms** will
-render the object or array using its default format (usually YAML).
+structured list or object data, and **noms** will render the object or
+array using its default format (usually YAML).
+
+Authentication
+--------------
+
+*NOTE:* This is under active development, expect it to change
+ frequently.
+
+**noms** supports Basic authentication. It will prompt the user for
+a username and password when required. A saved identity file can be
+provided with the ``--identity`` option to **noms** for non-interactive
+use.
 
 Dynamic Doctype
 ~~~~~~~~~~~~~~~
 
-The principle dynamic doctype is the ``noms-v2``, which is an object with the following top-level attributes:
+The dynamic doctype is the ``noms-v2`` type, which is an object with
+the following top-level attributes:
 
 ``$doctype``
   Must be ``noms-v2``. In future, backwards-incompatible extensions may be implemented in ``noms-v3`` or higher doctypes.
 
 ``$script``
-  An ordered array of scripts to fetch and evaluate.
+  An ordered array of scripts to fetch and evaluate; or Javascript text to evaluate directly.
 
 ``$argv``
   The arguments passed to the application. It's called ``$argv``
@@ -105,19 +154,22 @@ The principle dynamic doctype is the ``noms-v2``, which is an object with the fo
   The body of the document is the data to display. See `Output Formatting`_ below.
 
 From the perspective of javascript executing within the application,
-these are accessible as properties of the global **document** object.
+these are accessible as properties of the global **document** object
+(e.g., ``document.argv`` is the array of arguments given on the **noms**
+command line; Javascript can set ``document.exitcode`` to determine
+**noms'** exit code.
 
 Output Formatting
 ~~~~~~~~~~~~~~~~~
 
-The following entities are allowed in the body of a **noms-v2** document.
+The following entities are allowed in the body of a **noms-v2** document:
 
 * Arrays - Each item in the array is concatenated with a line-break
   between them.
 * Strings and numbers - A string or number is just displayed.
 * Raw objects - Raw objects are rendered using **noms'** default
   formatting (usually YAML)
-* Described objects - Described objects are data along with
+* Described objects - Described objects are data, along with
   information on how to render them. A described object has a
   top-level attribute called **$type** which defines how the described
   object is rendered.
@@ -127,17 +179,26 @@ The following entities are allowed in the body of a **noms-v2** document.
     how to otherwise serialize the objects. It has the following
     attributes:
 
-    * **format**: The format in which to render, one of: **json**, **yaml**, **csv**, **lines** (default **lines**).
-      The **lines** format is **noms'** built-in presentation of tabular data.
+    * **format**: The format in which to render, one of: **json**,
+      **yaml**, **csv**, **lines** (default **lines**).  The **lines**
+      format is **noms'** built-in presentation of tabular data
+      (similar to typical Unix command output).
 
-    * **columns**: An array of column specifiers. A column specifier is either a string with the name of
-      the field to display, or an object which has the following attributes:
+    * **columns**: An array of column specifiers. A column specifier
+      is either a string with the name of the field to display, or an
+      object which has the following attributes:
 
       * **field**: The object field to display in the column (*required*)
+
       * **heading**: The label to display in the column heading
+
       * **width**: The width of the column (data is space-padded to this width)
-      * **align**: One of ``left`` or ``right``, determines data alignment within column
-      * **maxwidth**: The maximum width of the data (values exceeding this length are truncated)
+
+      * **align**: One of ``left`` or ``right``, determines data
+        alignment within column
+
+      * **maxwidth**: The maximum width of the data (values exceeding
+        this length are truncated)
 
     * **labels**: Default ``true``; whether to display header row with field labels
 
@@ -160,33 +221,49 @@ The following entities are allowed in the body of a **noms-v2** document.
 Javascript Environment
 ----------------------
 
-Invoked scripts have access to the following global objects:
+Scripts have access to the following global objects:
 
 * **window** - This has information about the terminal environment in
   which **noms** is being invoked. It has the following
   attributes/methods:
 
-  * **height** - Height (if known)
-  * **width**  - Width (if known)
   * **isatty** - true if the output stream is a terminal
+
   * **document** - The document global object
-  * **alert** - Produce output on the error stream
+
+  * **location** - The location global object
+
+  * **console** - The console object implements **console.log** for
+    printing output to the debug stream (visible when the noms option
+    ``--debug`` is given.
+
+  * **alert()** - Produce output on the error stream
+
+  * **prompt()** - Prompt the user for input. You can pass a second
+    argument, which is a boolean value for whether the user input
+    should be echoed.
 
 * **document** - The document object is the current document being
-  rendered by **noms**. In addition to the attributes of the document
+  rendered by **noms**. These properties are assignable but the objects
+  behind them are immutable. In addition to the attributes of the document
   itself, it has the following:
 
   * **argv** - The arguments being invoked. The first element of this
     array is the first argument passed to **noms** itself (not the
     script it ultimately fetches, but how it's invoked, similar to
-    ``$1``
+    ``$1``.
 
   * **exitcode** - The numeric exit code with which **noms** will
     exit. Initially 0.
 
   * **body** - The text to display according to NOMS formattting.
 
-* **XMLHttpRequest** - An implementation of the XMLHttpRequest interface.
+* **XMLHttpRequest** - A partial implementation of the XMLHttpRequest
+  interface. See `NOMS::Command::XMLHttpRequest`_ for details. This
+  implementation conforms to a same-origin policy.
+
+.. _`NOMS::Command::XMLHttpRequest`: http://www.rubydoc.info/gems/noms-command/NOMS/Command/XMLHttpRequest
+
 
 Web 1.0 vs Web 2.0
 ------------------
@@ -195,7 +272,7 @@ Like the "real web", **noms** commands can choose to do some
 calculation on the server and some on the client: **noms** doesn't
 care. You can use no ``$script`` tag at all and just calculate the
 entire document to be rendered in the client (though this currently
-odoesn't allow for argument interpretation, in the future the
+doesn't allow for argument interpretation, in the future the
 arguments may be passed in request headers or **noms** may allow a way
 for them to show up in a query string or POST request--but **noms** is
 not really a command-line http client either). This is up to the
@@ -292,8 +369,8 @@ Javascript source code and the **noms** application document.
 Running Examples
 ----------------
 
-Use ``rake start`` to start the test webserver and run the following
+Use ``rake start`` to start the test webserver and run the
 example applications (see the comments inside the
 ``fixture/public/*.json`` files for syntax).
 
-
+Start with ``noms2 http://localhost:8787/echo.json hello world``.

@@ -14,6 +14,10 @@ class NOMS::Command
 
 end
 
+# Implements a subset of the XMLHttpRequest interface. This
+# class is exposed as a constructor function in the Javascript
+# VM. It uses NOMS::Command::UserAgent for HTTP conversations,
+# adding checks for the same-origin policy.
 class NOMS::Command::XMLHttpRequest
 
     OPENED = 1
@@ -32,13 +36,13 @@ class NOMS::Command::XMLHttpRequest
         @@origin = NOMS::Command::URInion.parse(origin)
     end
 
-    # We want to be re-using the useragent here because
-    # it's the one with the volatile cookies and that
-    # already prompted for passwords and stuff.
     def self.useragent
         @@ua
     end
 
+    # Set the class attribute for the UserAgent; ideally
+    # this is shared among everything in one *noms*
+    # invocation.
     def self.useragent=(ua)
         @@ua = ua
     end
@@ -56,6 +60,8 @@ class NOMS::Command::XMLHttpRequest
         @ua
     end
 
+    # Checks whether the URL has the same origin
+    # as the "origin" URL
     def same_origin?(other)
         other = NOMS::Command::URInion.parse(other)
         return false unless @origin.scheme == other.scheme
@@ -118,7 +124,12 @@ class NOMS::Command::XMLHttpRequest
         DONE
     end
 
-    # Oh, XMLHttpRequest, using send().
+    # This problematic implementations attempts to "guess"
+    # when Object#send is intended, and when the Javascript-
+    # style xhr.send() is desired. The one ambiguous situation
+    # it can't recover from is when there is one string argument,
+    # this is a valid invocation of XMLHttpRequest#send as well
+    # as Object#send, and we settle on XMLHttpRequest#send.
     def send(*vary)
         if vary.size == 0 or (vary.size == 1 and ! vary[0].is_a? Symbol)
             do_send(*vary)
