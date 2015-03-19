@@ -1,0 +1,8 @@
+{ "$doctype": "noms-v2",
+  "$script": ["var out = { };",
+              "out.protocol = location.protocol;",
+              "out.host = location.host;",
+              "out.href = location.href;",
+              "document.body = out;"
+             ],
+  "$body": [] }

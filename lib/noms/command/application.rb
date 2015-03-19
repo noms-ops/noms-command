@@ -29,8 +29,7 @@ class NOMS::Command::Application < NOMS::Command::Base
         :type, :body, :useragent,
         :document
 
-    def initialize(window, origin, argv, attrs={})
-        @window = window             # A NOMS::Command::Window
+    def initialize(origin, argv, attrs={})
         @document = nil
         @origin = NOMS::Command::URInion.parse(origin)
         if @origin.scheme == 'file' and @origin.host.nil?
@@ -41,6 +40,8 @@ class NOMS::Command::Application < NOMS::Command::Base
         @type = nil
 
         @log = attrs[:logger] || default_logger
+
+        @window = NOMS::Command::Window.new($0, @origin, :logger => @log)
 
         @log.debug "Application #{argv[0]} has origin: #{origin}"
         @useragent = NOMS::Command::UserAgent.new(@origin, :logger => @log,
@@ -62,6 +63,7 @@ class NOMS::Command::Application < NOMS::Command::Base
             new_url = landing_url
             @origin = new_url
             @useragent.origin = new_url
+            @window.origin = new_url
             @log.debug "Setting origin to: #{@origin}"
             if response.ok?
                 # Unlike typical ReST data sources, this
@@ -102,12 +104,17 @@ class NOMS::Command::Application < NOMS::Command::Base
 
     def render!
         if @document and @document.script
+            # Crashes when using @window as global object
             @v8 = V8::Context.new
             # Set up same-origin context and stuff--need
             # Ruby objects to do XHR and limit local I/O
             @window.document = @document
             @v8[:window] = @window
             @v8[:document] = @document
+            @v8.eval 'function alert(s) { window.alert(s); }'
+            @v8.eval 'function prompt(s, echo) { window.prompt(s, echo); }'
+            @v8.eval 'var location = window.location;'
+            @v8.eval 'var console = window.console;'
             NOMS::Command::XMLHttpRequest.origin = @origin
             NOMS::Command::XMLHttpRequest.useragent = @useragent
             @v8[:XMLHttpRequest] = NOMS::Command::XMLHttpRequest

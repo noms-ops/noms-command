@@ -37,14 +37,15 @@ class NOMS::Command
                   noms-options:
             USAGE
             opt :identity, "Identity file", :type => :string, :multi => true
-            opt :debug, "Enable debug output"
-            opt :verbose, "Enable verbose output"
-            opt :nodefault_bookmarks, "Don't consult default bookmarks files",
-                :short => '-X',
-                :long => '--nodefault-bookmarks'
+            opt :verbose,  "Enable verbose output"
+            opt :list,     "List bookmarks"
             opt :bookmarks, "Bookmark file location (can be specified multiple times)",
                 :type => :string,
                 :multi => true
+            opt :nodefault_bookmarks, "Don't consult default bookmarks files",
+                :short => '-X',
+                :long => '--nodefault-bookmarks'
+            opt :debug,    "Enable debug output"
             stop_on_unknown
         end
 
@@ -53,7 +54,7 @@ class NOMS::Command
         end
 
         Trollop::with_standard_exception_handling parser do
-            raise Trollop::HelpNeeded if @argv.empty?
+            raise Trollop::HelpNeeded if @argv.empty? and ! @opt[:list]
         end
 
         @opt[:debug] = true if ENV['NOMS_DEBUG'] and ! ENV['NOMS_DEBUG'].empty?
@@ -83,10 +84,14 @@ class NOMS::Command
             end
         end.compact.reverse.inject({}) { |h1, h2| h1.merge h2 }
 
+        if @opt[:list]
+            puts @bookmark.map { |pair| '%-15s -> %s' % pair }
+            return 0
+        end
+
         begin
-            window = NOMS::Command::Window.new($0, :logger => @log)
             origin = @bookmark[@argv[0].split('/').first] || @argv[0]
-            app = NOMS::Command::Application.new(window, origin, @argv, :logger => @log,
+            app = NOMS::Command::Application.new(origin, @argv, :logger => @log,
                                                  :specified_identities => @opt[:identity])
             app.fetch!                    # Retrieve page
             app.render!                   # Run scripts

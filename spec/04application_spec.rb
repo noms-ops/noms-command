@@ -24,7 +24,7 @@ describe NOMS::Command::Application do
         context 'with no arguments' do
 
             before(:each) do
-                @app = NOMS::Command::Application.new(NOMS::Command::Window.new($0),
+                @app = NOMS::Command::Application.new(
                                                    URI.parse('http://localhost:8787/dnc.json'),
                                                    [])
             end
@@ -32,8 +32,7 @@ describe NOMS::Command::Application do
         end
 
         it "should produce a usage message" do
-            app = NOMS::Command::Application.new(NOMS::Command::Window.new($0),
-                                                 'http://localhost:8787/dnc.json',
+            app = NOMS::Command::Application.new('http://localhost:8787/dnc.json',
                                                  ['dnc'])
             app.fetch!
             app.render!
@@ -41,8 +40,7 @@ describe NOMS::Command::Application do
         end
 
         it "should produce a list of DNC records" do
-            app = NOMS::Command::Application.new(NOMS::Command::Window.new($0),
-                                                 'http://localhost:8787/dnc.json',
+            app = NOMS::Command::Application.new('http://localhost:8787/dnc.json',
                                                  ['dnc', 'list'])
             app.fetch!
             app.render!
@@ -50,8 +48,7 @@ describe NOMS::Command::Application do
         end
 
         it "should follow a redirect" do
-            app = NOMS::Command::Application.new(NOMS::Command::Window.new($0),
-                                                 'http://localhost:8787/alt/dnc.json',
+            app = NOMS::Command::Application.new('http://localhost:8787/alt/dnc.json',
                                                  ['dnc', 'list'])
             app.fetch!
             app.render!

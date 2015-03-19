@@ -18,9 +18,7 @@ describe "NOMS::Command::Application" do
 
         before(:each) do
             @app = NOMS::Command::Application.
-                new(NOMS::Command::Window.new($0),
-                    'http://localhost:8787/auth/dnc.json',
-                    ['dnc'])
+                new('http://localhost:8787/auth/dnc.json', ['dnc'])
         end
 
 

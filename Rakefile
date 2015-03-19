@@ -34,6 +34,10 @@ task :status do
     end
 end
 
+task :sync do
+    system 'cp -R fixture/* test'
+end
+
 task :stop do
     Process.kill 'TERM', File.read('test/dnc.pid').to_i
     FileUtils.rm 'test/dnc.pid'

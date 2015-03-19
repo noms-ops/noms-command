@@ -8,3 +8,4 @@ TODO
   * http://www.w3schools.com/jsref/obj_location.asp
 * Prompting from Javascript: window.prompt()
 * Flesh out example application CLI.
+* List bookmarks

@@ -17,7 +17,7 @@ describe "NOMS::Command::Application" do
     describe '.new' do
         context 'with local file' do
             before(:all) do
-                @doc = NOMS::Command::Application.new(NOMS::Command::Window.new($0),
+                @doc = NOMS::Command::Application.new(
                                                    "file:///#{Dir.pwd}/test/public/files/foo.json", [])
                 @doc.fetch!
             end
@@ -30,7 +30,7 @@ describe "NOMS::Command::Application" do
 
         context 'with data URL' do
             before(:all) do
-                @doc = NOMS::Command::Application.new(NOMS::Command::Window.new($0),
+                @doc = NOMS::Command::Application.new(
                                                    'data:application/json,{"$doctype":"noms-v2","$body":[]}',
                                                    [])
                 @doc.fetch!
