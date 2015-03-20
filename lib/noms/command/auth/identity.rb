@@ -34,7 +34,7 @@ class NOMS::Command::Auth::Identity < NOMS::Command::Base
     @@identity_dir = File.join(ENV['HOME'], '.noms', 'identities')
     @@cipher       = 'aes-256-cfb'
     @@hmac_digest  = 'sha256'
-    @@max_key_idle = 30
+    @@max_key_idle = 3600
 
     def self.identity_dir
         @@identity_dir

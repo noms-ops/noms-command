@@ -123,16 +123,50 @@ array using its default format (usually YAML).
 Authentication
 --------------
 
-*NOTE:* This is under active development, expect it to change
-frequently.
+**noms** supports Basic authentication. It prompts the user for a
+username and password when authorization is required, and saves the
+authentication identity information in a "vault" to be used for future
+invocations (that is, you don't need to enter a password for every
+**noms** command run).
 
-**noms** supports Basic authentication. It will prompt the user for
-a username and password when required. A saved identity file can be
-provided with the ``--identity`` option to **noms** for non-interactive
-use.
+If you are "idle" for an hour (have not used the saved authentication
+vault for any web transactions), **noms** will time out the vault and
+you will need to re-authenticate.
+
+You can "close" the vault immediately by using the ``--logout``
+option. I strongly suggest you call this in your ``~/.logout``
+mechanism so that it runs immediately when you have completed a
+login session.
+
+You can bypass the "vault" by running **noms** with the
+``--plaintext-identity`` option. This has the effect of caching these
+credentials permanently (well, until they are no longer good). You
+should only use this option to generate an identity file for service
+(non-interactive) accounts that need perpetual access to a web
+service. The file will appear in the ``~/.noms/identities`` directory
+in a file named for the SHA-1 hash of the munged authentication realm
+and domain.
+
+Such a saved identity file can be provided with the ``--identity`` option
+to **noms** for non-interactive use.
+
+Security
+~~~~~~~~
+
+**noms** uses strong cryptography to implement the "vault" metaphor, but
+this is only a metaphor and the security provided is limited. The vault
+is opened and closed by means of an on-disk key. Because you can easily
+remove it and because it times out when idle (when this happens, **noms**
+overwrites it the next time it tries to use it), it's significantly better
+than ``.netrc`` files or passwords in environment variables or on the
+command-line; and more ergonomic as well. In the future, this cryptographic
+service will be provided by an independent **noms-agent**, similar to
+ssh-agent or gpg-agent. These still have the same problem in that they
+reduce the security of the system to operating system mechanisms rather
+than cryptographic mechanisms, but it is still an improvement.
 
 Dynamic Doctype
-~~~~~~~~~~~~~~~
+---------------
 
 The dynamic doctype is the ``noms-v2`` type, which is an object with
 the following top-level attributes:
@@ -264,19 +298,6 @@ Scripts have access to the following global objects:
   implementation conforms to a same-origin policy.
 
 .. _`NOMS::Command::XMLHttpRequest`: http://www.rubydoc.info/gems/noms-command/NOMS/Command/XMLHttpRequest
-
-
-Web 1.0 vs Web 2.0
-------------------
-
-Like the "real web", **noms** commands can choose to do some
-calculation on the server and some on the client: **noms** doesn't
-care. You can use no ``$script`` tag at all and just calculate the
-entire document to be rendered in the client (though this currently
-doesn't allow for argument interpretation, in the future the arguments
-may be passed in request headers or **noms** may allow a way for them
-to show up in a query string or POST request). This is up to the
-application designer.
 
 Example Application
 -------------------
