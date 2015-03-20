@@ -43,7 +43,7 @@ class NOMS::Command::Auth < NOMS::Command::Base
             contents = File.read file
             case contents[0].chr
             when '{'
-                NOMS::Command::Auth::Identity.new(self, JSON.parse(contents))
+                NOMS::Command::Auth::Identity.new(JSON.parse(contents), :logger => @log)
             else
                 raise NOMS::Command::Error.new "#{file} contains unsupported or corrupted data"
             end
@@ -83,13 +83,13 @@ class NOMS::Command::Auth < NOMS::Command::Base
                     prompt = "#{domain} (#{realm}) username: "
                     user = ask(prompt) { |u| u.default = Etc.getlogin }
                     pass = ask('Password: ') { |p| p.echo = false }
-                    NOMS::Command::Auth::Identity.new(self, {
+                    NOMS::Command::Auth::Identity.new({
                                                           'id' => identity_id,
                                                           'realm' => realm,
                                                           'domain' => domain,
                                                           'username' => user,
                                                           'password' => pass
-                                                      })
+                                                      }, :logger => @log)
                 else
                     @log.warn "Can't prompt for #{domain} (#{realm}) authentication (not a terminal)"
                     NOMS::Command::Auth::Identity.new({
@@ -98,7 +98,7 @@ class NOMS::Command::Auth < NOMS::Command::Base
                                                          'domain' => domain,
                                                          'username' => '',
                                                          'password' => ''
-                                                     })
+                                                     }, :logger => @log)
                 end
             end
         else
@@ -108,10 +108,6 @@ class NOMS::Command::Auth < NOMS::Command::Base
 
     def saved(identity_id)
         NOMS::Command::Auth::Identity.saved? identity_id
-    end
-
-    def retrieve(identity_id)
-        NOMS::Command::Auth::Identity.renew(identity_id)
     end
 
 end
