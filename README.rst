@@ -388,6 +388,10 @@ Javascript source code and the **noms** application document.
 Hacking/Running Examples
 ------------------------
 
+Use Ruby 1.9.3 or higher (e.g. if you need to set PATH
+so that Ruby 1.9 executables are found, do that:
+``export PATH=/usr/local/ruby1.9/bin:$PATH``.
+
 Use ``rake start`` to start the test webserver and run the
 example applications (see the comments inside the
 ``fixture/public/*.json`` files for syntax).
