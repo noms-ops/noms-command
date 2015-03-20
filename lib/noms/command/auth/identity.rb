@@ -34,7 +34,7 @@ class NOMS::Command::Auth::Identity < NOMS::Command::Base
     @@identity_dir = File.join(ENV['HOME'], '.noms', 'identities')
     @@cipher       = 'aes-256-cfb'
     @@hmac_digest  = 'sha256'
-    @@max_key_idle = 4 * 3600
+    @@max_key_idle = 30
 
     def self.identity_dir
         @@identity_dir
@@ -171,6 +171,15 @@ class NOMS::Command::Auth::Identity < NOMS::Command::Base
         file
     end
 
+    def clear(opt={})
+        @log.debug "Clearing #{@data['id']}"
+        begin
+            basefile = File.join(@@identity_dir, self.id_number)
+            File.unlink "#{basefile}.json" if File.exist? "#{basefile}.json"
+            File.unlink "#{basefile}.enc" if File.exist? "#{basefile}.enc"
+        end
+    end
+
     def to_json
         @data.to_json
     end
@@ -190,10 +199,6 @@ class NOMS::Command::Auth::Identity < NOMS::Command::Base
         message = hmac.digest + iv + data
 
         Base64.encode64(message)
-    end
-
-    def clean
-        @log.debug "Clearing #{@data['id']}"
     end
 
     def id

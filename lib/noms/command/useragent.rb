@@ -27,13 +27,13 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
         @client.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
         @redirect_checks = [ ]
         @log = attrs[:logger] || default_logger
+        @plaintext_identity = attrs[:plaintext_identity] || false
 
         @log.debug "(UserAgent) specified identities = #{attrs[:specified_identities]}"
         @auth = NOMS::Command::Auth.new(:logger => @log,
                                         :specified_identities => (attrs[:specified_identities] || []))
         # TODO: Set cookie jar to something origin-specific
-        # TODO: Set user-agent to something nomsy
-        # caching
+        # TODO: Response caching
         @client.redirect_uri_callback = lambda do |uri, res|
             raise NOMS::Command::Error.new "Bad redirect URL #{url}" unless check_redirect(uri)
             @client.default_redirect_uri_callback(uri, res)
@@ -75,9 +75,10 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
         when 401
             @log.debug "   handling unauthorized"
             if identity
-                @log.debug "   we have an identity #{identity} but are trying again"
+                # The identity we got was no good, try again
+                @log.debug "   we have an identity #{identity['username']} @ #{identity} but are trying again"
+                identity.clear
                 if tries > 0
-                    @log.debug "loading authentication identity for #{url}"
                     identity = @auth.load(url, response)
                     @client.set_auth(identity['domain'], identity['username'], identity['password'])
                     response, req_url = self.request(method, url, data, headers, tries - 1, identity)
@@ -87,6 +88,7 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
                 @client.set_auth(identity['domain'], identity['username'], identity['password'])
                 response, req_url = self.request(method, url, data, headers, 2, identity)
             end
+            identity = nil
         when 302, 301
             new_url = response.header['location'].first
             if check_redirect new_url
@@ -97,8 +99,8 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
         end
 
         if identity and response.ok?
-            @log.debug "Login succeeded, saving #{identity}"
-            identity.save
+            @log.debug "Login succeeded, saving #{identity['username']} @ #{identity}"
+            identity.save :encrypt => (! @plaintext_identity)
         end
 
         @log.debug "<- #{response.status} #{response.reason} <- #{req_url}"

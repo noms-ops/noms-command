@@ -8,6 +8,7 @@ require 'logger'
 require 'noms/command/window'
 require 'noms/command/application'
 require 'noms/command/formatter'
+require 'noms/command/auth'
 
 class NOMS
 
@@ -36,16 +37,21 @@ class NOMS::Command
                   noms [noms-options] { bookmark | url } [options] [arguments]
                   noms-options:
             USAGE
-            opt :identity, "Identity file", :type => :string, :multi => true
-            opt :verbose,  "Enable verbose output"
-            opt :list,     "List bookmarks"
+            opt :identity, "Identity file", :short => '-i',
+                                            :type => :string,
+                                            :multi => true
+            opt :logout,   "Log out of authentication sessions", :short => '-L'
+            opt :verbose,  "Enable verbose output", :short => '-v'
+            opt :list,     "List bookmarks", :short => '-l'
             opt :bookmarks, "Bookmark file location (can be specified multiple times)",
+                :short => '-b',
                 :type => :string,
                 :multi => true
             opt :nodefault_bookmarks, "Don't consult default bookmarks files",
                 :short => '-X',
                 :long => '--nodefault-bookmarks'
-            opt :debug,    "Enable debug output"
+            opt :debug,    "Enable debug output", :short => '-d'
+            opt :'plaintext-identity', "Save identity credentials in plaintext", :short => '-P'
             stop_on_unknown
         end
 
@@ -54,7 +60,7 @@ class NOMS::Command
         end
 
         Trollop::with_standard_exception_handling parser do
-            raise Trollop::HelpNeeded if @argv.empty? and ! @opt[:list]
+            raise Trollop::HelpNeeded if @argv.empty? and ! @opt[:list] and ! @opt[:logout]
         end
 
         @opt[:debug] = true if ENV['NOMS_DEBUG'] and ! ENV['NOMS_DEBUG'].empty?
@@ -89,10 +95,17 @@ class NOMS::Command
             return 0
         end
 
+        if @opt[:logout]
+            File.unlink NOMS::Command::Auth::Identity.vault_keyfile if
+                File.exist? NOMS::Command::Auth::Identity.vault_keyfile
+            return 0
+        end
+
         begin
             origin = @bookmark[@argv[0].split('/').first] || @argv[0]
             app = NOMS::Command::Application.new(origin, @argv, :logger => @log,
-                                                 :specified_identities => @opt[:identity])
+                                                 :specified_identities => @opt[:identity],
+                                                 :plaintext_identity => @opt[:'plaintext-identity'])
             app.fetch!                    # Retrieve page
             app.render!                   # Run scripts
             out = app.display

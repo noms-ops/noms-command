@@ -45,7 +45,9 @@ class NOMS::Command::Application < NOMS::Command::Base
 
         @log.debug "Application #{argv[0]} has origin: #{origin}"
         @useragent = NOMS::Command::UserAgent.new(@origin, :logger => @log,
-                                                  :specified_identities => (attrs[:specified_identities] || []))
+                                                  :specified_identities => (attrs[:specified_identities] || []),
+                                                  :plaintext_identity => (attrs.has_key?(:plaintext_identity) ?
+                                                      attrs[:plaintext_identity] : false))
     end
 
     def fetch!

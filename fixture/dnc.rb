@@ -115,6 +115,12 @@ class DNC < Sinatra::Application
         redirect to('/dnc.json')
     end
 
+    get '/auth/ok' do
+        require_auth
+        "SUCCESS"
+    end
+
+
     run! if app_file = $0
 
 end

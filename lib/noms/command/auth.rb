@@ -35,7 +35,6 @@ class NOMS::Command::Auth < NOMS::Command::Base
     def read_identity_from(file)
         @log.debug "Reading identity file #{file}"
         begin
-            # TODO: Encryption and passphrases
             raise NOMS::Command::Error.new "Identity file #{file} does not exist" unless File.exist? file
             s = File.stat file
             raise NOMS::Command::Error.new "You don't own identity file #{file}" unless s.owned?
@@ -56,12 +55,6 @@ class NOMS::Command::Auth < NOMS::Command::Base
         end
     end
 
-    # TODO: Persistent auth creds
-    # Store like a client certificate: encrypted. Then use an
-    # agent to store by using <agent>-add and typing passphrase
-    # just like a client cert. <agent> expires credentials.
-    # also you can explicitly unencrypt identity file
-
     def load(url, response)
         # Prompt
         auth_header = response.header['www-authenticate']
@@ -75,8 +68,8 @@ class NOMS::Command::Auth < NOMS::Command::Base
             end
             domain = [url.scheme, '://', url.host, ':', url.port, '/'].join('')
             identity_id = CGI.escape(realm) + '=' + domain
-            if saved(identity_id)
-                retrieve(identity_id)
+            if id_info = saved(identity_id)
+                NOMS::Command::Auth::Identity.new(id_info, :logger => @log)
             else
                 if $stdin.tty?
                     default_user = Etc.getlogin
@@ -107,7 +100,7 @@ class NOMS::Command::Auth < NOMS::Command::Base
     end
 
     def saved(identity_id)
-        NOMS::Command::Auth::Identity.saved? identity_id
+        NOMS::Command::Auth::Identity.saved identity_id
     end
 
 end
