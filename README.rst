@@ -416,13 +416,17 @@ Do ``rake start`` to start the webserver: web root is is ``test/``.
 Hack files in:
 
 * ``lib/`` - Ruby files for ``noms2`` command
+
 * ``fixture/dnc.rb`` - Sinatra app which is webserver for dnc app (serves
   static files and implements rest interface).
-* ``fixture/public/dnc.json`` - App document for 'dnc' subcommand.
-* ``fixture/public/lib``      - Javascript files, ``dnc.js`` implements
-                                dnc operations
 
-Do ``rake sync`` to sync over updated files from ``fixture`` and test.
+* ``fixture/public/dnc.json`` - App document for 'dnc' subcommand.
+
+* ``fixture/public/lib`` - Javascript files, ``dnc.js`` implements dnc
+  operations
+
+Do ``rake sync`` to sync over updated files from ``fixture`` and test
+(the webserver document root is ``test/public``).
 
 ``noms2 -d`` produces debugging showing full stack traces for Javascript
 errors, ``console.log()`` output and web traffic.
