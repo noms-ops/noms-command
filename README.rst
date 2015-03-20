@@ -120,6 +120,9 @@ according to `Dynamic Doctype`_, below. Otherwise, it is assumed to be
 structured list or object data, and **noms** will render the object or
 array using its default format (usually YAML).
 
+Otherwise, **noms** assumes the data may be binary and will send it
+to stdout as long as stdout is not a terminal.
+
 Authentication
 --------------
 
@@ -172,10 +175,16 @@ The dynamic doctype is the ``noms-v2`` type, which is an object with
 the following top-level attributes:
 
 ``$doctype``
-  Must be ``noms-v2``. In future, backwards-incompatible extensions may be implemented in ``noms-v3`` or higher doctypes.
+  Must be ``noms-v2``. In future, backwards-incompatible extensions
+  may be implemented in ``noms-v3`` or higher doctypes.
 
 ``$script``
-  An ordered array of scripts to fetch and evaluate; or Javascript text to evaluate directly.
+  An ordered array of script references to fetch and evaluate; or
+  Javascript strings to evaluate directly. A script reference
+  consists of object with a ``$source`` key, the value of which
+  is the URL of the script to load. Additional fields in the
+  object are ignored and can be used to document the origin
+  or license of the scripts.
 
 ``$argv``
   The arguments passed to the application. It's called ``$argv``
@@ -183,10 +192,12 @@ the following top-level attributes:
   invoked (that is, the bookmark or URL).
 
 ``$exitcode``
-  The unix process exit code with which **noms** will exit at the completion of the command.
+  The unix process exit code with which **noms** will exit at the
+  completion of the command.
 
 ``$body``
-  The body of the document is the data to display. See `Output Formatting`_ below.
+  The body of the document is the data to display. See `Output
+  Formatting`_ below.
 
 From the perspective of javascript executing within the application,
 these are accessible as properties of the global **document** object
