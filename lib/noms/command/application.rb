@@ -171,7 +171,8 @@ class NOMS::Command::Application < NOMS::Command::Base
     def display
         case @type
         when 'noms-v2'
-            NOMS::Command::Formatter.new(_sanitize(@document.body)).render
+            body = _sanitize(@document.body)
+            NOMS::Command::Formatter.new(body, :logger => @log).render
         when 'noms-raw'
             @body.to_yaml
         when /^text(\/|$)/

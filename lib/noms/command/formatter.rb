@@ -14,10 +14,12 @@ class NOMS::Command
 
 end
 
-class NOMS::Command::Formatter
+class NOMS::Command::Formatter < NOMS::Command::Base
 
     def initialize(data=nil, opt={})
+        @log = opt[:logger] || default_logger
         @data = data
+        @log.debug("Created formatter for: #{@data.inspect}");
         @format_raw_object = opt[:format_raw_object] || lambda { |o| o.to_yaml }
     end
 
@@ -60,7 +62,6 @@ class NOMS::Command::Formatter
     end
 
     def render_object_list(objlist)
-        objlist['$labels'] ||= true
         objlist['$format'] ||= 'lines'
         raise NOMS::Command::Error.new("objectlist ('lines' format) must contain '$columns' list") unless
             objlist['$columns'] and objlist['$columns'].respond_to? :map
@@ -160,7 +161,7 @@ class NOMS::Command::Formatter
 
     def render_object_record(object)
         labels = object.has_key?('$labels') ? object['$labels'] : true
-        fields = (object['$fields'] || object['$data'].keys).sort
+        fields = (object['$fields'].nil? or object['$fields'].empty?) ? object['$data'].keys.sort : object['$fields']
         data = object['$data']
         fields.map do |field|
             (labels ? (field + ': ') : '' ) + _string(data[field])
@@ -168,7 +169,7 @@ class NOMS::Command::Formatter
     end
 
     def filter_object(object)
-        if object['$fields']
+        if (object['$fields'] and ! object['$fields'].empty?)
             Hash[object['$fields'].map { |f| [f, object['$data'][f]] }]
         else
             object['$data']

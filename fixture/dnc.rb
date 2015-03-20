@@ -66,6 +66,8 @@ class DNC < Sinatra::Application
         request.body.rewind
         new_object = JSON.parse request.body.read
 
+        puts "POST for object: #{new_object.inspect}"
+
         data = load_data
         # How unsafe is this?
         new_object['id'] = data.map { |e| e['id'] }.max + 1

@@ -3,5 +3,5 @@ class NOMS
 end
 
 class NOMS::Command
-    VERSION = "0.6.0"
+    VERSION = "2.0.0"
 end

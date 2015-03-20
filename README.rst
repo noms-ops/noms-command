@@ -237,8 +237,6 @@ The following entities are allowed in the body of a **noms-v2** document:
 
     * **labels**: Default ``true``; whether to display header row with field labels
 
-    * **columns**: Field names, headings and widths
-
     * **data**: The objects to render
 
   * ``$type``: **object** An object has the following attributes:
