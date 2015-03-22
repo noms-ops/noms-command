@@ -4,8 +4,6 @@ require 'noms/command/urinion'
 require 'noms/command/useragent'
 require 'noms/command/error'
 
-require 'httpclient'
-
 class NOMS
 
 end
@@ -113,7 +111,7 @@ class NOMS::Command::XMLHttpRequest
     end
 
     def HEADERS_RECEIVED
-       HEADERS_RECEIVED
+        HEADERS_RECEIVED
     end
 
     def LOADING
@@ -154,24 +152,26 @@ class NOMS::Command::XMLHttpRequest
         self.readyState = OPENED
         self.readyState = HEADERS_RECEIVED
         self.readyState = LOADING
-        @responseText = @response.content
+        @responseText = @response.body
         self.readyState = DONE
     end
 
     def status
-        @response.status.to_i unless @response.nil?
+        @response.status unless @response.nil?
     end
 
     def statusText
-        @response.status + ' ' + @response.reason unless @response.nil?
+        @response.statusText unless @response.nil?
     end
 
     def getResponseHeader(header)
-        @response.header[header.downcase] unless @response.nil?
+        @response.header header unless @response.nil?
     end
 
     def getAllResponseHeaders
-        lambda { || @response.headers.map { |h, v| "#{h}: #{v}" }.join("\n") + "\n" }
+        unless @response.nil?
+            lambda { || @response.header.map { |h, v| "#{h}: #{v}" }.join("\n") + "\n" }
+        end
     end
 
     def abort()

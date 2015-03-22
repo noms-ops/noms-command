@@ -67,12 +67,12 @@ class NOMS::Command::Application < NOMS::Command::Base
             @useragent.origin = new_url
             @window.origin = new_url
             @log.debug "Setting origin to: #{@origin}"
-            if response.ok?
+            if response.success?
                 # Unlike typical ReST data sources, this
                 # should very rarely fail unless there is
                 # a legitimate communication issue.
-                @type = response.contenttype || 'text/plain'
-                @body = response.content
+                @type = response.content_type || 'text/plain'
+                @body = response.body
             else
                 raise NOMS::Command::Error.new("Failed to request #{@origin}: #{response.status} #{response.reason}")
             end
@@ -124,15 +124,20 @@ class NOMS::Command::Application < NOMS::Command::Base
             @document.script.each do |script|
                 if script.respond_to? :has_key? and script.has_key? '$source'
                     # Parse relative URL and load
-                    response, landing_url = @useragent.get(script['$source'])
+                    request_error = nil
+                    begin
+                        response, landing_url = @useragent.get(script['$source'])
+                    rescue StandardError => e
+                        request_error = e
+                    end
                     # Don't need landing_url
                     script_name = File.basename(@useragent.absolute_url(script['$source']).path)
                     script_ref = "#{script_index},#{script_name}"
-                    if response.ok?
-                        case response.contenttype
+                    if request_error.nil? and response.success?
+                        case response.content_type
                         when /^(application|text)\/(x-|)javascript/
                             begin
-                                @v8.eval response.content
+                                @v8.eval response.body
                             rescue StandardError => e
                                 @log.warn "Javascript[#{script_ref}] error: #{e.message}"
                                 @log.debug e.backtrace.join("\n")
@@ -142,8 +147,15 @@ class NOMS::Command::Application < NOMS::Command::Base
                                 "for script from #{script['$source'].inspect}"
                         end
                     else
-                        @log.warn "Couldn't load script from #{script['$source'].inspect}: #{response.status} #{response.reason}"
-                        @log.debug "Body of unsuccessful request: #{response.body}"
+                        if request_error
+                            @log.warn "Couldn't load script from #{script['$source'].inspect} " +
+                                "(#{request_error.class}): #{request_error.message})"
+                            @log.debug request_error.backtrace
+                        else
+                            @log.warn "Couldn't load script from #{script['$source'].inspect}: " +
+                                "#{response.status} #{response.reason}"
+                            @log.debug "Body of unsuccessful request: #{response.body}"
+                        end
                     end
                 else
                     # It's javascript text

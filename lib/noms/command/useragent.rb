@@ -9,6 +9,7 @@ require 'highline/import'
 
 require 'noms/command/auth'
 require 'noms/command/base'
+require 'noms/command/useragent/response'
 
 class NOMS
 
@@ -22,6 +23,7 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
 
     def initialize(origin, attrs={})
         @origin = origin
+        # httpclient
         @client = HTTPClient.new :agent_name => "noms/#{NOMS::Command::VERSION}"
         # TODO Replace with TOFU implementation
         @client.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
@@ -34,6 +36,7 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
                                         :specified_identities => (attrs[:specified_identities] || []))
         # TODO: Set cookie jar to something origin-specific
         # TODO: Response caching
+        # httpclient
         @client.redirect_uri_callback = lambda do |uri, res|
             raise NOMS::Command::Error.new "Bad redirect URL #{url}" unless check_redirect(uri)
             @client.default_redirect_uri_callback(uri, res)
@@ -68,9 +71,16 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
     def request(method, url, data=nil, headers={}, tries=10, identity=nil)
         req_url = absolute_url(url)
         @log.debug "#{method} #{req_url}" + (headers.empty? ? '' : headers.inspect)
-        response = @client.request(method.to_s.upcase, req_url, '', data, headers)
-        @log.debug "-> #{response.status} #{response.reason} (#{response.content.size} bytes of #{response.contenttype})"
-        @log.debug JSON.pretty_generate(response.headers)
+        # httpclient
+        begin
+            httpresponse = @client.request(method.to_s.upcase, req_url, '', data, headers)
+        rescue StandardError => e
+            raise NOMS::Command::Error.new "Couldn't retrieve #{req_url} (#{e.class}): #{e.message})"
+            @log.debug e.backtrace.join("\n")
+        end
+        response = NOMS::Command::UserAgent::Response.new(httpresponse, :logger => @log)
+        @log.debug "-> #{response.statusText} (#{response.body.size} bytes of #{response.content_type})"
+        @log.debug JSON.pretty_generate(response.header)
         case response.status
         when 401
             @log.debug "   handling unauthorized"
@@ -80,17 +90,19 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
                 identity.clear
                 if tries > 0
                     identity = @auth.load(url, response)
+                    # httpclient
                     @client.set_auth(identity['domain'], identity['username'], identity['password'])
                     response, req_url = self.request(method, url, data, headers, tries - 1, identity)
                 end
             else
                 identity = @auth.load(url, response)
+                # httpclient
                 @client.set_auth(identity['domain'], identity['username'], identity['password'])
                 response, req_url = self.request(method, url, data, headers, 2, identity)
             end
             identity = nil
         when 302, 301
-            new_url = response.header['location'].first
+            new_url = response.header('location').first
             if check_redirect new_url
                 @log.debug "redirect to #{new_url}"
                 raise NOMS::Command::Error.new "Can't follow redirect to #{new_url}: too many redirects" if tries <= 0
@@ -103,7 +115,7 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
             identity.save :encrypt => (! @plaintext_identity)
         end
 
-        @log.debug "<- #{response.status} #{response.reason} <- #{req_url}"
+        @log.debug "<- #{response.statusText} <- #{req_url}"
         [response, req_url]
     end
 
