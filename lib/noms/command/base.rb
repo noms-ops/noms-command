@@ -12,6 +12,16 @@ end
 
 class NOMS::Command::Base
 
+    attr_accessor :logger
+
+    def logger
+        @log
+    end
+
+    def logger=(new_logger)
+        @log = new_logger
+    end
+
     def default_logger
         log = Logger.new $stderr
         log.level = Logger::WARN

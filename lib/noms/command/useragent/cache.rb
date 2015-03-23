@@ -3,6 +3,8 @@
 require 'noms/command/version'
 
 require 'pstore'
+require 'fileutils'
+require 'msgpack'
 
 require 'noms/command/base'
 
@@ -21,6 +23,7 @@ end
 class NOMS::Command::UserAgent::Cache
 
     @@max_cache_size = 10 * 1024 * 1024
+    @@trim_cache_size = 8 * 1024 * 1024
 
     def ensure_dir(dir)
         FileUtils.mkdir_p dir unless File.directory? dir
@@ -34,9 +37,18 @@ class NOMS::Command::UserAgent::Cache
             @meta[:cache_size] ||= 0
             @meta[:file_count] ||= 0
 
-            if @meta[:cache_size] > 10 * 1024 * 1024
-                clean!
+            if @meta[:cache_size] > @@max_cache_size
+                trim!
             end
+        end
+    end
+
+    def clear!
+        FileUtils.rm_r @location if File.directory? @location
+        ensure_dir @location
+        @meta.transaction do
+            @meta[:cache_size] = 0
+            @meta[:file_count] = 0
         end
     end
 
@@ -48,13 +60,11 @@ class NOMS::Command::UserAgent::Cache
         end
     end
 
-    def set(request, response)
-        $stderr.puts "STORING #{request.cache_key}"
+    def set(key, item_data)
         size = 0
-        key = request.cache_key
         ensure_dir cache_dir(key)
         File.open(File.join(cache_dir(key), key), 'w') do |fh|
-            Marshal.dump(response, fh)
+            fh.write item_data
             size = fh.stat.size
         end
         @meta.transaction do
@@ -63,21 +73,41 @@ class NOMS::Command::UserAgent::Cache
         end
     end
 
-    def get(request)
-        $stderr.puts "FINDING #{request.cache_key}"
-        key = request.cache_key
+    def freshen(key)
+        cache_file = File.join(cache_dir(key), key)
+        File.utime(Time.now, Time.now, cache_file)
+    end
+
+    def get(key)
         cache_file = File.join(cache_dir(key), key)
         obj = nil
         if File.exist? cache_file
-            $stderr.puts "CACHE HIT ON #{request.cache_key}: #{request.url}"
-            obj = File.open(cache_file, 'r') { |fh| Marshal.load(fh) }
-            $stderr.puts "LOADED #{obj.class}"
+            obj = File.open(cache_file, 'r') do |fh|
+                fh.read
+                # Marshal.load(fh)
+            end
         end
         obj
     end
 
-    def clean!
-
+    def trim!
+        # Trim cache, all within PStore transaction
+        cache_size = 0
+        files = Dir["#{@location}/*/*"].map do |file|
+            stat = File.stat(file)
+            size = stat.size
+            mtime = stat.mtime
+            total += size
+            [file, size, mtime]
+        end.sort { |a, b| a[2] <=> b[2] }
+        file_count = files.length
+        while cache_size > @@trim_cache_size
+            file, size, = files.shift
+            File.unlink(file)
+            cache_size -= size
+        end
+        @meta[:cache_size] = cache_size
+        @meta[:file_count] = file_count
     end
 
 end

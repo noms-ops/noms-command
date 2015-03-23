@@ -42,7 +42,7 @@ describe 'NOMS::Command::UserAgent' do
 
                 sleep 2
                 response1, = @ua.request('GET', 'http://localhost:8787/static/expires-4')
-                expect(response0.from_cache?).to be_truthy
+                expect(response1.from_cache?).to be_truthy
                 generated1 = get_generated response1
 
                 expect(generated1).to eq generated0

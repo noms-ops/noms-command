@@ -23,8 +23,7 @@ end
 class NOMS::Command::UserAgent::Response::Typhoeus < NOMS::Command::UserAgent::Response
 
     def initialize(httpresponse, opts={})
-        @log = opts[:logger] || default_logger
-        @response = httpresponse
+        super
         if @response.return_code != :ok
             raise NOMS::Command::Error.new "Client error[#{@response.return_code.inspect}]: #{@response.return_message}"
         end
@@ -51,7 +50,7 @@ class NOMS::Command::UserAgent::Response::Typhoeus < NOMS::Command::UserAgent::R
     end
 
     def statusText
-        @response.status_message
+        @response.code.to_s + ' ' + @response.status_message
     end
 
     def content_type

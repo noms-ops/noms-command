@@ -9,6 +9,7 @@ require 'highline/import'
 
 require 'noms/command/auth'
 require 'noms/command/base'
+require 'noms/command/useragent/cache'
 require 'noms/command/useragent/requester'
 require 'noms/command/useragent/response'
 
@@ -36,6 +37,11 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
         @plaintext_identity = attrs[:plaintext_identity] || false
 
         @cache = attrs.has_key?(:cache) ? attrs[:cache] : true
+        @max_age = attrs[:max_age] || 3600
+
+        if @cache
+            @cacher = NOMS::Command::UserAgent::Cache.new
+        end
 
         @log.debug "(UserAgent) specified identities = #{attrs[:specified_identities]}"
         @auth = NOMS::Command::Auth.new(:logger => @log,
@@ -43,7 +49,7 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
     end
 
     def clear_cache!
-
+        @cacher.clear! unless @cacher.nil?
     end
 
     def auth
@@ -71,10 +77,52 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
         end
     end
 
-    def request(method, url, data=nil, headers={}, tries=10, identity=nil)
+    # Calculate a key for caching based on the method and URL
+    def request_key(method, url, opt={})
+        OpenSSL::Digest::SHA1.new([method, url].join(' ')).hexdigest
+    end
+
+    def request(method, url, data=nil, headers={}, tries=10, identity=nil, cached=nil)
         req_url = absolute_url(url)
         @log.debug "#{method} #{req_url}" + (headers.empty? ? '' : headers.inspect)
-        # httpclient
+
+        # TODO: check Vary
+        if cached.nil? and method.to_s.upcase == 'GET'
+            key = request_key('GET', req_url)
+            cached_response = NOMS::Command::UserAgent::Response.from_cache(@cacher.get(key), :logger => @log)
+            if cached_response and cached_response.is_a? NOMS::Command::UserAgent::Response
+                cached_response.logger = @log
+
+                @log.debug "Response cached for #{req_url}:"
+                @log.debug "<-- #{JSON.pretty_generate(cached_response.header)}"
+                @log.debug "<-- #{cached_response.body.size} bytes of #{cached_response.content_type}"
+
+                if cached_response.age < @max_age
+                    if (cached_response.auth_hash.nil? or (identity and identity.auth_verify? cached_response.auth_hash))
+                        if cached_response.current?
+                            @log.debug ". Using cached response from #{cached_response.date}"
+                            return [cached_response, req_url]
+                        else
+                            # Maybe we can revalidate it
+                            if cached_response.etag
+                                headers = { 'If-None-Match' => cached_response.etag }.merge headers
+                                return self.request(method, url, data, headers, tries, identity, cached_response)
+                            elsif cached_response.last_modified
+                                headers = { 'If-Modified-Since' => cached_response.last_modified.httpdate }.merge headers
+                                return self.request(method, url, data, headers, tries, identity, cached_response)
+                            else
+                                @log.debug ". Rejecting cached response (not current, and no way to revalidate)"
+                            end
+                        end
+                    else
+                        @log.debug ". Rejecting cached response (no authentication)"
+                    end
+                else
+                    @log.debug ". Rejecting cached response (beyond absolute max age limit)"
+                end
+            end
+        end
+
         begin
             response = @client.request :method => method,
                                        :url => req_url,
@@ -86,6 +134,7 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
         end
         @log.debug "-> #{response.statusText} (#{response.body.size} bytes of #{response.content_type})"
         @log.debug JSON.pretty_generate(response.header)
+
         case response.status
         when 401
             @log.debug "   handling unauthorized"
@@ -106,6 +155,16 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
                 response, req_url = self.request(method, url, data, headers, 2, identity)
             end
             identity = nil
+        when 304
+            # The cached response has been revalidated
+            if cached
+                key = request_key(method, req_url)
+                @cacher.freshen key
+                response, req_url = [cached, req_url]
+            else
+                raise NOMS::Command::Error.new "Server returned 304 Not Modified for #{new_url}, " +
+                    "but we were not revalidating a cached copy"
+            end
         when 302, 301
             new_url = response.header('Location')
             if check_redirect new_url
@@ -118,6 +177,20 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
         if identity and response.success?
             @log.debug "Login succeeded, saving #{identity['username']} @ #{identity}"
             identity.save :encrypt => (! @plaintext_identity)
+        end
+
+        if method.to_s.upcase == 'GET' and response.cacheable?
+            cache_object = response.cacheable_copy
+            cache_object.cached!
+            if identity
+                cache_object.auth_hash = identity.verification_hash
+                @log.debug "Setting cached response identity verification hash: #{cache_object.auth_hash}"
+            end
+            key = request_key(method, req_url)
+            @log.debug "Caching #{key}: #{method} #{req_url}"
+            @cacher.set(key, cache_object.to_cache)
+        else
+            @log.debug "Response is not a candidate for caching"
         end
 
         @log.debug "<- #{response.statusText} <- #{req_url}"

@@ -138,6 +138,15 @@ class NOMS::Command::Auth::Identity < NOMS::Command::Base
         refresh_vault_key if h['_decrypted']
     end
 
+    def verification_hash
+        BCrypt::Password.create(self['username'] + ':' + self['password'] + '@' + self['id']).to_s
+    end
+
+    def auth_verify?(pwd_hash)
+        pwd = BCrypt::Password.new(pwd_hash)
+        pwd == self['username'] + ':' + self['password'] + '@' + self['id']
+    end
+
     def id_number
         OpenSSL::Digest::SHA1.new(self['id']).hexdigest
     end
