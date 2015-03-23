@@ -19,7 +19,7 @@ Gem::Specification.new do |spec|
 
     spec.add_runtime_dependency "therubyracer"
     spec.add_runtime_dependency "mime-types"
-    spec.add_runtime_dependency "httpclient"
+    spec.add_runtime_dependency "typhoeus"
     spec.add_runtime_dependency "json"
     spec.add_runtime_dependency "trollop"
     spec.add_runtime_dependency "highline"

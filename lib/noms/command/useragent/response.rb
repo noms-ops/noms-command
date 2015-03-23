@@ -53,4 +53,15 @@ class NOMS::Command::UserAgent::Response < NOMS::Command::Base
         @response.contenttype
     end
 
+    def cacheable?
+        return false if self.from_cache?
+        @cache_control = self.header 'Cache-Control'
+        return false if /no-cache/.match @cache_control
+        return false if /no-store/.match @cache_contnol
+    end
+
+    def from_cache?
+        false
+    end
+
 end

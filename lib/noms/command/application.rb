@@ -74,7 +74,7 @@ class NOMS::Command::Application < NOMS::Command::Base
                 @type = response.content_type || 'text/plain'
                 @body = response.body
             else
-                raise NOMS::Command::Error.new("Failed to request #{@origin}: #{response.status} #{response.reason}")
+                raise NOMS::Command::Error.new("Failed to request #{@origin}: #{response.statusText}")
             end
         else
             raise NOMS::Command::Error.new("noms command #{@argv[0].inspect} not found: not a URL or bookmark")
@@ -153,7 +153,7 @@ class NOMS::Command::Application < NOMS::Command::Base
                             @log.debug request_error.backtrace
                         else
                             @log.warn "Couldn't load script from #{script['$source'].inspect}: " +
-                                "#{response.status} #{response.reason}"
+                                "#{response.statusText}"
                             @log.debug "Body of unsuccessful request: #{response.body}"
                         end
                     end

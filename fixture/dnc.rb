@@ -30,6 +30,14 @@ class DNC < Sinatra::Application
             @auth ||=  Rack::Auth::Basic::Request.new(request.env)
             @auth.provided? and @auth.basic? and @auth.credentials and @auth.credentials == ['testuser', 'testpass']
         end
+
+        def generated_body
+            JSON.pretty_generate({ 'generated' => Time.now.httpdate }) + "\n"
+        end
+    end
+
+    before do
+        content_type 'application/json'
     end
 
     get '/readme' do
@@ -122,6 +130,65 @@ class DNC < Sinatra::Application
         "SUCCESS"
     end
 
+    # Caching client should let sit in cache
+    # for 4s then refetch
+    get '/static/max-age-4' do
+        cache_control :max_age => 4
+        generated_body
+    end
+
+    # Caching client must always revalidate
+    # even within 4s
+    get '/static/must-revalidate' do
+        cache_control :must_revalidate, :max_age => 4
+        expires 4
+        etag "10"
+        generated_body
+    end
+
+    # Caching client must never cache
+    get '/static/no-cache' do
+        cache_control :no_cache
+        generated_body
+    end
+
+    # Caching client should let sit in cache
+    # for 4s then refetch
+    get '/static/expires-4' do
+        expires 4
+        generated_body
+    end
+
+    # Caching client should let sit in cache
+    # for 4s then revalidate using If-Modified-Since
+    get '/static/last-modified' do
+        expires 4
+        $static_time ||= Time.now
+        last_modified $static_time
+        generated_body
+    end
+
+    # Caching client should let sit in cache
+    # for 4s then revalidate using If-None-Match
+    get '/static/expires-4-changing' do
+        expires 4
+        etag Time.now.httpdate
+        generated_body
+    end
+
+    # Caching client should let sit in cache
+    # for 2s then revalidate using If-None-Match
+    get '/static/expires-2-constant' do
+        etag "10"
+        expires 2
+        generated_body
+    end
+
+    get '/static/long-cache' do
+        etag "11"
+        expires 100
+        generated_body
+    end
 
     run! if app_file = $0
 

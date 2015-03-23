@@ -20,11 +20,14 @@ class NOMS::Command::UserAgent::Response < NOMS::Command::Base
 
 end
 
-class NOMS::Command::UserAgent::Response::Typhoeus < NOMS::Command::Base
+class NOMS::Command::UserAgent::Response::Typhoeus < NOMS::Command::UserAgent::Response
 
     def initialize(httpresponse, opts={})
         @log = opts[:logger] || default_logger
         @response = httpresponse
+        if @response.return_code != :ok
+            raise NOMS::Command::Error.new "Client error[#{@response.return_code.inspect}]: #{@response.return_message}"
+        end
     end
 
     def body

@@ -22,6 +22,8 @@ end
 
 class NOMS::Command::UserAgent < NOMS::Command::Base
 
+    attr_reader :cache
+
     def initialize(origin, attrs={})
         @origin = origin
         # httpclient
@@ -33,9 +35,15 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
         @redirect_checks = [ ]
         @plaintext_identity = attrs[:plaintext_identity] || false
 
+        @cache = attrs.has_key?(:cache) ? attrs[:cache] : true
+
         @log.debug "(UserAgent) specified identities = #{attrs[:specified_identities]}"
         @auth = NOMS::Command::Auth.new(:logger => @log,
                                         :specified_identities => (attrs[:specified_identities] || []))
+    end
+
+    def clear_cache!
+
     end
 
     def auth
@@ -74,7 +82,7 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
                                        :headers => headers
         rescue StandardError => e
             @log.debug e.backtrace.join("\n")
-            raise NOMS::Command::Error.new "Couldn't retrieve #{req_url} (#{e.class}): #{e.message})"
+            raise NOMS::Command::Error.new "Couldn't retrieve #{req_url} (#{e.class}): #{e.message}"
         end
         @log.debug "-> #{response.statusText} (#{response.body.size} bytes of #{response.content_type})"
         @log.debug JSON.pretty_generate(response.header)
