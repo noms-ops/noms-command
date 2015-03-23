@@ -1,8 +1,10 @@
-#!/usr/bin/env ruby
+#!ruby
 
 require 'noms/command/version'
 
-require 'httpclient'
+require 'noms/command/base'
+require 'noms/command/useragent'
+require 'noms/command/useragent/response'
 
 class NOMS
 
@@ -18,37 +20,9 @@ end
 
 class NOMS::Command::UserAgent::Response < NOMS::Command::Base
 
-    def initialize(httpresponse, opts={})
-        @log = opts[:logger] || default_logger
-        @response = httpresponse
-    end
-
-    def body
-        @response.content
-    end
-
-    def success?
-        @response.ok?
-    end
-
-    def header(hdr=nil)
-        if hdr.nil?
-            @response.headers
-        else
-            @response.header[hdr.downcase] unless @response.nil?
-        end
-    end
-
-    def status
-        @response.status.to_i unless @response.status.nil?
-    end
-
-    def statusText
-        @response.status.to_s + ' ' + @response.reason unless @response.status.nil?
-    end
-
-    def content_type
-        @response.contenttype
+    def self.new(response, opt={})
+        require 'noms/command/useragent/response/httpclient'
+        NOMS::Command::UserAgent::Response::HTTPClient.new(response, opt)
     end
 
 end

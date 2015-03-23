@@ -9,6 +9,7 @@ require 'highline/import'
 
 require 'noms/command/auth'
 require 'noms/command/base'
+require 'noms/command/useragent/requester'
 require 'noms/command/useragent/response'
 
 class NOMS
@@ -24,23 +25,17 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
     def initialize(origin, attrs={})
         @origin = origin
         # httpclient
-        @client = HTTPClient.new :agent_name => "noms/#{NOMS::Command::VERSION}"
         # TODO Replace with TOFU implementation
-        @client.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
-        @redirect_checks = [ ]
         @log = attrs[:logger] || default_logger
+        @log.debug "Creating useragent with origin #{origin}"
+        @client = NOMS::Command::UserAgent::Requester.new :logger => @log
+        @log.debug "Created!"
+        @redirect_checks = [ ]
         @plaintext_identity = attrs[:plaintext_identity] || false
 
         @log.debug "(UserAgent) specified identities = #{attrs[:specified_identities]}"
         @auth = NOMS::Command::Auth.new(:logger => @log,
                                         :specified_identities => (attrs[:specified_identities] || []))
-        # TODO: Set cookie jar to something origin-specific
-        # TODO: Response caching
-        # httpclient
-        @client.redirect_uri_callback = lambda do |uri, res|
-            raise NOMS::Command::Error.new "Bad redirect URL #{url}" unless check_redirect(uri)
-            @client.default_redirect_uri_callback(uri, res)
-        end
     end
 
     def auth
@@ -73,12 +68,14 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
         @log.debug "#{method} #{req_url}" + (headers.empty? ? '' : headers.inspect)
         # httpclient
         begin
-            httpresponse = @client.request(method.to_s.upcase, req_url, '', data, headers)
+            response = @client.request :method => method,
+                                       :url => req_url,
+                                       :body => data,
+                                       :headers => headers
         rescue StandardError => e
             raise NOMS::Command::Error.new "Couldn't retrieve #{req_url} (#{e.class}): #{e.message})"
             @log.debug e.backtrace.join("\n")
         end
-        response = NOMS::Command::UserAgent::Response.new(httpresponse, :logger => @log)
         @log.debug "-> #{response.statusText} (#{response.body.size} bytes of #{response.content_type})"
         @log.debug JSON.pretty_generate(response.header)
         case response.status
