@@ -73,8 +73,8 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
                                        :body => data,
                                        :headers => headers
         rescue StandardError => e
-            raise NOMS::Command::Error.new "Couldn't retrieve #{req_url} (#{e.class}): #{e.message})"
             @log.debug e.backtrace.join("\n")
+            raise NOMS::Command::Error.new "Couldn't retrieve #{req_url} (#{e.class}): #{e.message})"
         end
         @log.debug "-> #{response.statusText} (#{response.body.size} bytes of #{response.content_type})"
         @log.debug JSON.pretty_generate(response.header)
@@ -99,7 +99,7 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
             end
             identity = nil
         when 302, 301
-            new_url = response.header('location').first
+            new_url = response.header('Location')
             if check_redirect new_url
                 @log.debug "redirect to #{new_url}"
                 raise NOMS::Command::Error.new "Can't follow redirect to #{new_url}: too many redirects" if tries <= 0
@@ -107,7 +107,7 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
             end
         end
 
-        if identity and response.ok?
+        if identity and response.success?
             @log.debug "Login succeeded, saving #{identity['username']} @ #{identity}"
             identity.save :encrypt => (! @plaintext_identity)
         end

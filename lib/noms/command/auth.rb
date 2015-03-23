@@ -57,7 +57,7 @@ class NOMS::Command::Auth < NOMS::Command::Base
 
     def load(url, response)
         # Prompt
-        auth_header = response.header['www-authenticate']
+        auth_header = response.header('WWW-Authenticate')
         auth_header = (auth_header.respond_to?(:first) ? auth_header.first : auth_header)
         case auth_header
         when /Basic/

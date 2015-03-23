@@ -30,7 +30,7 @@ class NOMS::Command::UserAgent::Requester::HTTPClient < NOMS::Command::Base
         @log = opt[:logger] || default_logger
         @log.debug "Creating #{self.class} with options: #{opt.inspect}"
         @client_opts = opt
-        @client = ::HTTPClient.new :agent_name => "noms/#{NOMS::Command::VERSION};httpclient"
+        @client = ::HTTPClient.new :agent_name => "noms/#{NOMS::Command::VERSION} httpclient/#{::HTTPClient::VERSION}"
         @client.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
     end
 

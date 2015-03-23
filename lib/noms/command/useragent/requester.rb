@@ -18,9 +18,19 @@ end
 
 class NOMS::Command::UserAgent::Requester < NOMS::Command::Base
 
+    @@requester_class = 'typhoeus'
+
     def self.new(opts={})
-        require 'noms/command/useragent/requester/httpclient'
-        NOMS::Command::UserAgent::Requester::HTTPClient.new(opts)
+        case @@requester_class
+        when 'httpclient'
+            require 'noms/command/useragent/requester/httpclient'
+            NOMS::Command::UserAgent::Requester::HTTPClient.new(opts)
+        when 'typhoeus'
+            require 'noms/command/useragent/requester/typhoeus'
+            NOMS::Command::UserAgent::Requester::Typhoeus.new(opts)
+        else
+            raise NOMS::Command::Error.new "Internal error - no requester class #{@@requester_class}"
+        end
     end
 
     def initialize(opt={})
