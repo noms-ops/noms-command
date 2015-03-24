@@ -5,14 +5,7 @@ require 'noms/command/version'
 require 'mime-types'
 require 'v8'
 
-require 'noms/command/window'
-require 'noms/command/useragent'
-require 'noms/command/error'
-require 'noms/command/urinion'
-require 'noms/command/formatter'
-require 'noms/command/document'
-require 'noms/command/xmlhttprequest'
-require 'noms/command/base'
+require 'noms/command'
 
 class NOMS
 
@@ -46,6 +39,7 @@ class NOMS::Command::Application < NOMS::Command::Base
         @log.debug "Application #{argv[0]} has origin: #{origin}"
         @useragent = NOMS::Command::UserAgent.new(@origin, :logger => @log,
                                                   :specified_identities => (attrs[:specified_identities] || []),
+                                                  :cache => (attrs.has_key?(:cache) ? attrs[:cache] : true),
                                                   :plaintext_identity => (attrs.has_key?(:plaintext_identity) ?
                                                       attrs[:plaintext_identity] : false))
     end
@@ -128,6 +122,7 @@ class NOMS::Command::Application < NOMS::Command::Base
                     begin
                         response, landing_url = @useragent.get(script['$source'])
                     rescue StandardError => e
+                        @log.debug "Setting request_error (#{e.class}) to #{e.message})"
                         request_error = e
                     end
                     # Don't need landing_url
@@ -143,18 +138,18 @@ class NOMS::Command::Application < NOMS::Command::Base
                                 @log.debug e.backtrace.join("\n")
                             end
                         else
-                            @log.warn "Unsupported script type '#{response.contenttype.inspect}' " +
+                            @log.warn "Unsupported script type '#{response.content_type.inspect}' " +
                                 "for script from #{script['$source'].inspect}"
                         end
                     else
                         if request_error
                             @log.warn "Couldn't load script from #{script['$source'].inspect} " +
                                 "(#{request_error.class}): #{request_error.message})"
-                            @log.debug request_error.backtrace
+                            @log.debug request_error.backtrace.join("\n")
                         else
                             @log.warn "Couldn't load script from #{script['$source'].inspect}: " +
                                 "#{response.statusText}"
-                            @log.debug "Body of unsuccessful request: #{response.body}"
+                            # @log.debug "Body of unsuccessful request: #{response.body}"
                         end
                     end
                 else

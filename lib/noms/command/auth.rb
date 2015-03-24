@@ -23,12 +23,12 @@ class NOMS::Command::Auth < NOMS::Command::Base
 
     def initialize(opts={})
         @log = opts[:logger] || default_logger
-        @loaded = { }
+        @specified = { }
         (opts[:specified_identities] || []).each do |file|
             maybe_id = read_identity_from file
             raise NOMS::Command::Error.now "#{file} contains invalid identity (no 'id')" unless
                 maybe_id['id']
-            @loaded[maybe_id['id']] = maybe_id
+            @specified[maybe_id['id']] = maybe_id
         end
     end
 
@@ -68,30 +68,39 @@ class NOMS::Command::Auth < NOMS::Command::Base
             end
             domain = [url.scheme, '://', url.host, ':', url.port, '/'].join('')
             identity_id = CGI.escape(realm) + '=' + domain
-            if id_info = saved(identity_id)
-                NOMS::Command::Auth::Identity.new(id_info, :logger => @log)
-            else
-                if $stdin.tty?
-                    default_user = Etc.getlogin
-                    prompt = "#{domain} (#{realm}) username: "
-                    user = ask(prompt) { |u| u.default = Etc.getlogin }
-                    pass = ask('Password: ') { |p| p.echo = false }
-                    NOMS::Command::Auth::Identity.new({
-                                                          'id' => identity_id,
-                                                          'realm' => realm,
-                                                          'domain' => domain,
-                                                          'username' => user,
-                                                          'password' => pass
-                                                      }, :logger => @log)
+            unless @specified.empty?
+                if @specified[identity_id]
+                    @specified[identity_id]
                 else
-                    @log.warn "Can't prompt for #{domain} (#{realm}) authentication (not a terminal)"
-                    NOMS::Command::Auth::Identity.new({
-                                                         'id' => identity_id,
-                                                         'realm' => realm,
-                                                         'domain' => domain,
-                                                         'username' => '',
-                                                         'password' => ''
-                                                     }, :logger => @log)
+                    @log.warn "No identity specified for #{domain} (#{realm})"
+                    nil
+                end
+            else
+                if id_info = saved(identity_id)
+                    NOMS::Command::Auth::Identity.new(id_info, :logger => @log)
+                else
+                    if $stdin.tty?
+                        default_user = Etc.getlogin
+                        prompt = "#{domain} (#{realm}) username: "
+                        user = ask(prompt) { |u| u.default = Etc.getlogin }
+                        pass = ask('Password: ') { |p| p.echo = false }
+                        NOMS::Command::Auth::Identity.new({
+                                                              'id' => identity_id,
+                                                              'realm' => realm,
+                                                              'domain' => domain,
+                                                              'username' => user,
+                                                              'password' => pass
+                                                          }, :logger => @log)
+                    else
+                        @log.warn "Can't prompt for #{domain} (#{realm}) authentication (not a terminal)"
+                        NOMS::Command::Auth::Identity.new({
+                                                              'id' => identity_id,
+                                                              'realm' => realm,
+                                                              'domain' => domain,
+                                                              'username' => '',
+                                                              'password' => ''
+                                                          }, :logger => @log)
+                    end
                 end
             end
         else

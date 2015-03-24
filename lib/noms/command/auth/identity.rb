@@ -1,6 +1,7 @@
 #!ruby
 
 require 'noms/command/version'
+require 'noms/command/home'
 
 require 'fileutils'
 require 'logger'
@@ -8,7 +9,7 @@ require 'openssl'
 require 'fcntl'
 require 'base64'
 
-require 'noms/command/base'
+require 'noms/command'
 
 class String
     def to_hex
@@ -31,7 +32,7 @@ end
 class NOMS::Command::Auth::Identity < NOMS::Command::Base
     include Enumerable
 
-    @@identity_dir = File.join(ENV['HOME'], '.noms', 'identities')
+    @@identity_dir = File.join(NOMS::Command.home, 'identities')
     @@cipher       = 'aes-256-cfb'
     @@hmac_digest  = 'sha256'
     @@max_key_idle = 3600

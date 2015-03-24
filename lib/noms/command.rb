@@ -1,14 +1,22 @@
 #!ruby
 
 require 'noms/command/version'
+require 'noms/command/home'
 
 require 'trollop'
 require 'logger'
 
+require 'noms/command/base'
+require 'noms/command/useragent'
+
 require 'noms/command/window'
+require 'noms/command/xmlhttprequest'
+require 'noms/command/document'
+
 require 'noms/command/application'
 require 'noms/command/formatter'
 require 'noms/command/auth'
+require 'noms/command/auth/identity'
 
 class NOMS
 
@@ -47,6 +55,11 @@ class NOMS::Command
                 :short => '-b',
                 :type => :string,
                 :multi => true
+            opt :home,    "Use directory as NOMS_HOME instead of #{NOMS::Command.home}",
+                :short => '-H',
+                :type => :string
+            opt :nocache,  "Don't cache files",
+                :short => '-C'
             opt :nodefault_bookmarks, "Don't consult default bookmarks files",
                 :short => '-X',
                 :long => '--nodefault-bookmarks'
@@ -59,6 +72,8 @@ class NOMS::Command
             parser.parse(@argv)
         end
 
+        NOMS::Command.home = @opt[:home] if @opt[:home]
+
         Trollop::with_standard_exception_handling parser do
             raise Trollop::HelpNeeded if @argv.empty? and ! @opt[:list] and ! @opt[:logout]
         end
@@ -66,7 +81,7 @@ class NOMS::Command
         @opt[:debug] = true if ENV['NOMS_DEBUG'] and ! ENV['NOMS_DEBUG'].empty?
 
         default_bookmarks =
-            [ File.join(ENV['HOME'], '.noms/bookmarks.json'),
+            [ File.join(NOMS::Command.home, 'bookmarks.json'),
             '/usr/local/etc/noms/bookmarks.json',
             '/etc/noms/bookmarks.json'].select { |f| File.exist? f }
 
@@ -105,6 +120,7 @@ class NOMS::Command
             origin = @bookmark[@argv[0].split('/').first] || @argv[0]
             app = NOMS::Command::Application.new(origin, @argv, :logger => @log,
                                                  :specified_identities => @opt[:identity],
+                                                 :cache => ! @opt[:nocache],
                                                  :plaintext_identity => @opt[:'plaintext-identity'])
             app.fetch!                    # Retrieve page
             app.render!                   # Run scripts

@@ -24,7 +24,7 @@ describe 'NOMS::Command::UserAgent' do
         describe '.request' do
 
             before(:each) do
-                @ua = NOMS::Command::UserAgent.new :max_age => 10, :cache => true
+                @ua = NOMS::Command::UserAgent.new 'http://localhost:8787/', :max_age => 10, :cache => true
                 @ua.clear_cache!
             end
 
@@ -54,15 +54,15 @@ describe 'NOMS::Command::UserAgent' do
                 generated0 = get_generated response0
 
                 sleep 5
-                response2, = @ua.request('GET', 'http://localhost:8787/static/expires-4')
-                expect(response0.from_cache?).to be_falsey
+                response1, = @ua.request('GET', 'http://localhost:8787/static/expires-4')
+                expect(response1.from_cache?).to be_falsey
                 generated1 = get_generated response1
 
-                expect(Time.now - generated).to be <= 1
+                expect(Time.now - generated1).to be <= 1
             end
 
             it 'revalidates cached content with last-modified' do
-                response0, = @ua.request('GET', 'http://localhost:8787/static/expires-4')
+                response0, = @ua.request('GET', 'http://localhost:8787/static/last-modified')
                 expect(response0.from_cache?).to be_falsey
                 generated0 = get_generated response0
 
@@ -108,7 +108,7 @@ describe 'NOMS::Command::UserAgent' do
             end
 
             it 'refuses to cache when directed' do
-                ua = NOMS::Command::UserAgent.new :cache => false
+                ua = NOMS::Command::UserAgent.new 'http://localhost:8787/', :cache => false
                 response0, = ua.request('GET', 'http://localhost:8787/static/expires-4')
                 expect(response0.from_cache?).to be_falsey
                 generated0 = get_generated response0

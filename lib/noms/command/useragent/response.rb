@@ -4,10 +4,7 @@ require 'noms/command/version'
 
 require 'time'
 
-require 'noms/command/base'
-require 'noms/command/error'
-require 'noms/command/useragent'
-require 'noms/command/useragent/response'
+require 'noms/command'
 
 class NOMS
 
@@ -23,8 +20,8 @@ end
 
 class NOMS::Command::UserAgent::Response < NOMS::Command::Base
 
-    attr_reader :expires, :cache_control, :etag, :last_modified, :date
-    attr_accessor :auth_hash, :from_cache
+    attr_reader :expires, :cache_control, :etag, :last_modified
+    attr_accessor :auth_hash, :from_cache, :date, :original_date
 
     def self.from_cache(cache_text, opts={})
         unless cache_text.nil? or cache_text.empty?
@@ -50,15 +47,18 @@ class NOMS::Command::UserAgent::Response < NOMS::Command::Base
             @log.debug "Created from hash, setting from_cache = #{httpresponse['from_cache'].inspect}"
             self.from_cache = httpresponse['from_cache']
             self.auth_hash = httpresponse['auth_hash']
+            self.original_date = Time.httpdate(httpresponse['original_date'])
+            self.date = Time.httpdate(httpresponse['date'])
         end
 
         @log.debug "self.from_cache? == #{self.from_cache?}"
 
         @cache_control = self.header 'Cache-Control'
+        @date = get_header_time('Date') || Time.now
+        @original_date ||= @date
         @expires = get_expires
         @etag = self.header 'Etag'
         @last_modified = get_header_time 'Last-modified'
-        @date = get_header_time('Date') || Time.now
     end
 
     # The response body
@@ -68,11 +68,8 @@ class NOMS::Command::UserAgent::Response < NOMS::Command::Base
 
     # The success status
     def success?
-        @response['success?']
-    end
-
-    def headercase(s)
-        s.split('-').map { |w| w.downcase.capitalize }.join('-')
+        # We created this object explicitly, so it's always successful
+        true
     end
 
     # A hash or headers, or specific header
@@ -80,7 +77,7 @@ class NOMS::Command::UserAgent::Response < NOMS::Command::Base
         if hdr.nil?
             @response['header']
         else
-            @response['header'][headercase(hdr)] unless @response.nil?
+            Hash[@response['header'].map { |h, v| [h.downcase, v] }][hdr.downcase] unless @response.nil?
         end
     end
 
@@ -92,12 +89,25 @@ class NOMS::Command::UserAgent::Response < NOMS::Command::Base
     # The status message including code
     def statusText
         @response['statusText']
-        @response.status.to_s + ' ' + @response.reason
     end
 
     # MIME Type of content
     def content_type
         self.header 'Content-Type'
+    end
+
+    def header_params(s)
+        Hash[s.split(';').map do |field|
+                param, value = field.split('=', 2)
+                value ||= ''
+                [param.strip, value.strip]
+            end]
+    end
+
+    def content_encoding
+        if self.content_type
+            header_params(self.content_type)['charset']
+        end
     end
 
     def to_json
@@ -115,7 +125,9 @@ class NOMS::Command::UserAgent::Response < NOMS::Command::Base
             'status' => self.status,
             'statusText' => self.statusText,
             'auth_hash' => self.auth_hash,
-            'from_cache' => self.from_cache
+            'from_cache' => self.from_cache,
+            'date' => self.date.httpdate,
+            'original_date' => self.original_date.httpdate
         }
     end
 
@@ -126,15 +138,24 @@ class NOMS::Command::UserAgent::Response < NOMS::Command::Base
     def get_expires
         @log.debug "Extracting expires: Expires=#{self.header('Expires').inspect} " +
             "Cache-Control=#{self.header('Cache-Control').inspect}"
+
+        expires = [ ]
+
         if @cache_control and (m = /max-age=(\d+)/.match(@cache_control))
-            Time.now + m[1].to_i
-        elsif @response.header('Expires')
+            expires << (@date + m[1].to_i)
+        end
+
+        if self.header('Expires')
             begin
-                Time.httpdate @response.header('Expires')
+                expires << Time.httpdate(self.header('Expires'))
             rescue ArgumentError => e
                 @log.debug "Response had 'Expires' header but could not parse (#{e.class}): #{e.message}"
             end
         end
+
+        return nil if expires.empty?
+
+        expires.empty? ? nil : expires.min
     end
 
     def get_header_time(hdr)
@@ -151,7 +172,7 @@ class NOMS::Command::UserAgent::Response < NOMS::Command::Base
 
     def cacheable?
         @log.debug "   (cacheable? checking response code)"
-        return false unless @response.code == 200
+        return false unless self.status == 200
         @log.debug "   (cacheable? checking for cache info in headers)"
         return false unless @expires
         @log.debug "   (cacheable? checking for if alreday cached response)"
@@ -186,7 +207,8 @@ class NOMS::Command::UserAgent::Response < NOMS::Command::Base
     end
 
     def age
-        Time.now - @date
+        @log.debug "   (request is #{Time.now - self.original_date} s old)"
+        Time.now - self.original_date
     end
 
     def cacheable_copy

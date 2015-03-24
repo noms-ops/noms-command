@@ -7,8 +7,7 @@ require 'httpclient'
 require 'uri'
 require 'highline/import'
 
-require 'noms/command/auth'
-require 'noms/command/base'
+require 'noms/command'
 require 'noms/command/useragent/cache'
 require 'noms/command/useragent/requester'
 require 'noms/command/useragent/response'
@@ -87,7 +86,7 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
         @log.debug "#{method} #{req_url}" + (headers.empty? ? '' : headers.inspect)
 
         # TODO: check Vary
-        if cached.nil? and method.to_s.upcase == 'GET'
+        if @cache and cached.nil? and method.to_s.upcase == 'GET'
             key = request_key('GET', req_url)
             cached_response = NOMS::Command::UserAgent::Response.from_cache(@cacher.get(key), :logger => @log)
             if cached_response and cached_response.is_a? NOMS::Command::UserAgent::Response
@@ -97,6 +96,7 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
                 @log.debug "<-- #{JSON.pretty_generate(cached_response.header)}"
                 @log.debug "<-- #{cached_response.body.size} bytes of #{cached_response.content_type}"
 
+                @log.debug "Checking in response age (#{cached_response.age}) is less than absolute max #{@max_age}"
                 if cached_response.age < @max_age
                     if (cached_response.auth_hash.nil? or (identity and identity.auth_verify? cached_response.auth_hash))
                         if cached_response.current?
@@ -151,13 +151,18 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
             else
                 identity = @auth.load(url, response)
                 # httpclient
-                @client.set_auth(identity['domain'], identity['username'], identity['password'])
-                response, req_url = self.request(method, url, data, headers, 2, identity)
+                if identity
+                    @client.set_auth(identity['domain'], identity['username'], identity['password'])
+                    response, req_url = self.request(method, url, data, headers, 2, identity)
+                end
             end
             identity = nil
         when 304
             # The cached response has been revalidated
             if cached
+                # TODO: Update Date: and Expires:/Cache-Control: headers
+                # in cached response and re-cache, while maintaining
+                # original_date
                 key = request_key(method, req_url)
                 @cacher.freshen key
                 response, req_url = [cached, req_url]
@@ -179,7 +184,7 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
             identity.save :encrypt => (! @plaintext_identity)
         end
 
-        if method.to_s.upcase == 'GET' and response.cacheable?
+        if @cache and method.to_s.upcase == 'GET' and response.cacheable?
             cache_object = response.cacheable_copy
             cache_object.cached!
             if identity

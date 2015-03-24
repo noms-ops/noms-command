@@ -1,12 +1,13 @@
 #!ruby
 
 require 'noms/command/version'
+require 'noms/command/home'
 
 require 'pstore'
 require 'fileutils'
 require 'msgpack'
 
-require 'noms/command/base'
+require 'noms/command'
 
 class NOMS
 
@@ -22,17 +23,28 @@ end
 
 class NOMS::Command::UserAgent::Cache
 
+    @@format_version = '0'
     @@max_cache_size = 10 * 1024 * 1024
     @@trim_cache_size = 8 * 1024 * 1024
+    @@location = File.join(NOMS::Command.home, 'cache', @@format_version)
+
+    def self.clear!
+        FileUtils.rm_r @@location if File.directory? @@location
+        ensure_dir @@location
+        meta = PStore.new(File.join(@@location, 'metadata.db'))
+        meta.transaction do
+            meta[:cache_size] = 0
+            meta[:file_count] = 0
+        end
+    end
 
     def ensure_dir(dir)
         FileUtils.mkdir_p dir unless File.directory? dir
     end
 
     def initialize
-        @location = File.join(ENV['HOME'], '.noms', 'cache', '0')
-        ensure_dir @location
-        @meta = PStore.new File.join(@location, 'metadata.db')
+        ensure_dir @@location
+        @meta = PStore.new File.join(@@location, 'metadata.db')
         @meta.transaction do
             @meta[:cache_size] ||= 0
             @meta[:file_count] ||= 0
@@ -44,8 +56,8 @@ class NOMS::Command::UserAgent::Cache
     end
 
     def clear!
-        FileUtils.rm_r @location if File.directory? @location
-        ensure_dir @location
+        FileUtils.rm_r @@location if File.directory? @@location
+        ensure_dir @@location
         @meta.transaction do
             @meta[:cache_size] = 0
             @meta[:file_count] = 0
@@ -54,9 +66,9 @@ class NOMS::Command::UserAgent::Cache
 
     def cache_dir(key=nil)
         if key
-            File.join(@location, 'data', key[0 .. 1])
+            File.join(@@location, 'data', key[0 .. 1])
         else
-            File.join(@location, 'data')
+            File.join(@@location, 'data')
         end
     end
 
@@ -93,7 +105,7 @@ class NOMS::Command::UserAgent::Cache
     def trim!
         # Trim cache, all within PStore transaction
         cache_size = 0
-        files = Dir["#{@location}/*/*"].map do |file|
+        files = Dir["#{@@location}/*/*"].map do |file|
             stat = File.stat(file)
             size = stat.size
             mtime = stat.mtime
