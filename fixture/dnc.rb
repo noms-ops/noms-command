@@ -190,6 +190,13 @@ class DNC < Sinatra::Application
         generated_body
     end
 
+    get '/auth/cacheable' do
+        require_auth
+        expires 100
+        etag "11"
+        generated_body
+    end
+
     run! if app_file = $0
 
 end

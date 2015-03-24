@@ -122,6 +122,35 @@ describe 'NOMS::Command::UserAgent' do
                 expect(generated0 - Time.now).to be <= 1
             end
 
+            it 'does not serve cached reply for authenticated pages, when unauthenticated' do
+                File.chmod 0600, 'test/identity'
+                File.open('test/fail-identity') do |outfh|
+                    File.open('test/identity') { |fh| JSON.load(fh) }.merge({ 'id' => 'FAIL' })
+                end
+                ua = NOMS::Command::UserAgent.new 'http://localhost:8787/', :cache => true,
+                     :specified_identities => ['test/identity']
+
+                response0, = ua.request('GET', 'http://localhost:8787/auth/cacheable')
+                expect(response0.from_cache?).to be_falsey
+                generated0 = get_generated response0
+
+                ua = NOMS::Command::UserAgent.new 'http://localhost:8787/', :cache => true,
+                    :specified_identities => ['test/fail-identity']
+                response1, = ua.request('GET', 'http://localhost:8787/')
+                expect(response1.from_cache?).to be_falsey
+                expect(response1.status).to eq 401
+            end
+
+            it 'does serve cached reply for authenticated pages, when authenticated' do
+                ua = NOMS::Command::UserAgent.new 'http://localhost:8787/', :cache => true,
+                    :specified_identities => ['test/identity']
+                response0, = ua.request('GET', 'http://localhost:8787/')
+                expect(response0.from_cache?).to be_falsey
+                generated0 = get_generated response0
+
+                sleep 3
+                ua = NOMS::Command::UserAgent.new 'http://localhost:8787/', :cache => true
+            end
         end
 
     end
