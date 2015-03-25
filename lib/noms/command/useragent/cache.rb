@@ -5,7 +5,6 @@ require 'noms/command/home'
 
 require 'pstore'
 require 'fileutils'
-require 'msgpack'
 
 require 'noms/command'
 

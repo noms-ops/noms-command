@@ -25,33 +25,10 @@ class NOMS::Command::Auth < NOMS::Command::Base
         @log = opts[:logger] || default_logger
         @specified = { }
         (opts[:specified_identities] || []).each do |file|
-            maybe_id = read_identity_from file
+            maybe_id = NOMS::Command::Auth::Identity.from file
             raise NOMS::Command::Error.now "#{file} contains invalid identity (no 'id')" unless
                 maybe_id['id']
             @specified[maybe_id['id']] = maybe_id
-        end
-    end
-
-    def read_identity_from(file)
-        @log.debug "Reading identity file #{file}"
-        begin
-            raise NOMS::Command::Error.new "Identity file #{file} does not exist" unless File.exist? file
-            s = File.stat file
-            raise NOMS::Command::Error.new "You don't own identity file #{file}" unless s.owned?
-            raise NOMS::Command::Error.new "Permissions on #{file} are too permissive" unless (s.mode & 077 == 0)
-            contents = File.read file
-            case contents[0].chr
-            when '{'
-                NOMS::Command::Auth::Identity.new(JSON.parse(contents), :logger => @log)
-            else
-                raise NOMS::Command::Error.new "#{file} contains unsupported or corrupted data"
-            end
-        rescue StandardError => e
-            if e.is_a? NOMS::Command::Error
-                raise e
-            else
-                raise NOMS::Command::Error.new "Couldn't load identity from #{file} (#{e.class}): #{e.message}"
-            end
         end
     end
 

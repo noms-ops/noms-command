@@ -8,6 +8,7 @@ require 'logger'
 require 'openssl'
 require 'fcntl'
 require 'base64'
+require 'bcrypt'
 
 require 'noms/command'
 
@@ -126,10 +127,26 @@ class NOMS::Command::Auth::Identity < NOMS::Command::Base
 
     end
 
-    def refresh_vault_key
-        vault_keyfile = NOMS::Command::Auth::Identity.vault_keyfile
-        if File.exist? vault_keyfile
-            File.utime(Time.now, Time.now, vault_keyfile)
+    def self.from(file)
+        begin
+            raise NOMS::Command::Error.new "Identity file #{file} does not exist" unless File.exist? file
+            s = File.stat file
+            raise NOMS::Command::Error.new "You don't own identity file #{file}" unless s.owned?
+            raise NOMS::Command::Error.new "Permissions on #{file} are too permissive" unless (s.mode & 077 == 0)
+            contents = File.read file
+            raise NOMS::Command::Error.new "#{file} is empty" unless contents and ! contents.empty?
+            case contents[0].chr
+            when '{'
+                NOMS::Command::Auth::Identity.new(JSON.parse(contents).merge({'_specified' => file }), :logger => @log)
+            else
+                raise NOMS::Command::Error.new "#{file} contains unsupported or corrupted data"
+            end
+        rescue StandardError => e
+            if e.is_a? NOMS::Command::Error
+                raise e
+            else
+                raise NOMS::Command::Error.new "Couldn't load identity from #{file} (#{e.class}): #{e.message}"
+            end
         end
     end
 
@@ -137,6 +154,10 @@ class NOMS::Command::Auth::Identity < NOMS::Command::Base
         @log = attrs[:logger] || default_logger
         @data = h
         refresh_vault_key if h['_decrypted']
+    end
+
+    def specified
+        @data['_specified']
     end
 
     def verification_hash
@@ -157,6 +178,7 @@ class NOMS::Command::Auth::Identity < NOMS::Command::Base
     end
 
     def []=(key, value)
+        $stderr.puts "auth identity set #{key} = #{value}"
         @data[key] = value
     end
 
@@ -168,17 +190,27 @@ class NOMS::Command::Auth::Identity < NOMS::Command::Base
         @data.keys
     end
 
+    def refresh_vault_key
+        vault_keyfile = NOMS::Command::Auth::Identity.vault_keyfile
+        if File.exist? vault_keyfile
+            File.utime(Time.now, Time.now, vault_keyfile)
+        end
+    end
+
     def save(opt={})
-        @log.debug "Saving #{@data['id']}"
+        return self.specified if self.specified
         begin
             opt[:encrypt] = true unless opt.has_key? :encrypt
             file = opt[:file] || File.join(@@identity_dir, self.id_number + '.' + (opt[:encrypt] ? 'enc' : 'json'))
             data = opt[:encrypt] ? self.encrypt : (self.to_json + "\n")
 
             File.open(file, 'w') { |fh| fh.write data }
+            file
+        rescue StandardError => e
+            @log.warn "Couldn't save identity for #{@data['id']} (#{e.class}): #{e.message}"
+            @log.debug { e.backtrace.join("\n") }
+            return nil
         end
-
-        file
     end
 
     def clear(opt={})

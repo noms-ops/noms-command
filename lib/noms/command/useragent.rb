@@ -25,7 +25,7 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
     attr_reader :cache
 
     def initialize(origin, attrs={})
-        @origin = origin
+        @origin = origin.respond_to?(:scheme) ? origin : URI.parse(origin)
         # httpclient
         # TODO Replace with TOFU implementation
         @log = attrs[:logger] || default_logger
@@ -78,7 +78,7 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
 
     # Calculate a key for caching based on the method and URL
     def request_key(method, url, opt={})
-        OpenSSL::Digest::SHA1.new([method, url].join(' ')).hexdigest
+        OpenSSL::Digest::SHA1.new([method, url.to_s].join(' ')).hexdigest
     end
 
     def request(method, url, data=nil, headers={}, tries=10, identity=nil, cached=nil)
@@ -96,8 +96,9 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
                 @log.debug "<-- #{JSON.pretty_generate(cached_response.header)}"
                 @log.debug "<-- #{cached_response.body.size} bytes of #{cached_response.content_type}"
 
-                @log.debug "Checking in response age (#{cached_response.age}) is less than absolute max #{@max_age}"
+                @log.debug "Checking if response age (#{cached_response.age}) is less than absolute max #{@max_age}"
                 if cached_response.age < @max_age
+                    @log.debug "Checking if cached authenticated result is currently authenticated"
                     if (cached_response.auth_hash.nil? or (identity and identity.auth_verify? cached_response.auth_hash))
                         if cached_response.current?
                             @log.debug ". Using cached response from #{cached_response.date}"
@@ -143,17 +144,17 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
                 @log.debug "   we have an identity #{identity['username']} @ #{identity} but are trying again"
                 identity.clear
                 if tries > 0
-                    identity = @auth.load(url, response)
+                    identity = @auth.load(req_url, response)
                     # httpclient
                     @client.set_auth(identity['domain'], identity['username'], identity['password'])
-                    response, req_url = self.request(method, url, data, headers, tries - 1, identity)
+                    return self.request(method, url, data, headers, tries - 1, identity)
                 end
             else
-                identity = @auth.load(url, response)
+                identity = @auth.load(req_url, response)
                 # httpclient
                 if identity
                     @client.set_auth(identity['domain'], identity['username'], identity['password'])
-                    response, req_url = self.request(method, url, data, headers, 2, identity)
+                    return self.request(method, url, data, headers, 2, identity)
                 end
             end
             identity = nil
@@ -175,7 +176,7 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
             if check_redirect new_url
                 @log.debug "redirect to #{new_url}"
                 raise NOMS::Command::Error.new "Can't follow redirect to #{new_url}: too many redirects" if tries <= 0
-                response, req_url = self.request(method, new_url, data, headers, tries - 1)
+                return self.request(method, new_url, data, headers, tries - 1, identity)
             end
         end
 

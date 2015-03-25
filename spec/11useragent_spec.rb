@@ -124,9 +124,11 @@ describe 'NOMS::Command::UserAgent' do
 
             it 'does not serve cached reply for authenticated pages, when unauthenticated' do
                 File.chmod 0600, 'test/identity'
-                File.open('test/fail-identity') do |outfh|
-                    File.open('test/identity') { |fh| JSON.load(fh) }.merge({ 'id' => 'FAIL' })
+                File.open('test/fail-identity', 'w') do |outfh|
+                    outfh.write JSON.pretty_generate(File.open('test/identity') { |fh| JSON.load(fh) }.merge({ 'password' => 'FAIL' }))
                 end
+                File.chmod 0600, 'test/fail-identity'
+
                 ua = NOMS::Command::UserAgent.new 'http://localhost:8787/', :cache => true,
                      :specified_identities => ['test/identity']
 
@@ -136,20 +138,24 @@ describe 'NOMS::Command::UserAgent' do
 
                 ua = NOMS::Command::UserAgent.new 'http://localhost:8787/', :cache => true,
                     :specified_identities => ['test/fail-identity']
-                response1, = ua.request('GET', 'http://localhost:8787/')
+                response1, = ua.request('GET', 'http://localhost:8787/auth/cacheable')
                 expect(response1.from_cache?).to be_falsey
                 expect(response1.status).to eq 401
             end
 
             it 'does serve cached reply for authenticated pages, when authenticated' do
+                File.chmod 0600, 'test/identity'
                 ua = NOMS::Command::UserAgent.new 'http://localhost:8787/', :cache => true,
                     :specified_identities => ['test/identity']
-                response0, = ua.request('GET', 'http://localhost:8787/')
+                response0, = ua.request('GET', 'http://localhost:8787/auth/cacheable')
                 expect(response0.from_cache?).to be_falsey
                 generated0 = get_generated response0
 
                 sleep 3
-                ua = NOMS::Command::UserAgent.new 'http://localhost:8787/', :cache => true
+                response1, = ua.request('GET', 'http://localhost:8787/auth/cacheable')
+                expect(response1.from_cache?).to be_falsey
+                generated1 = get_generated response1
+                expect(Time.now - generated1).to be < 1
             end
         end
 

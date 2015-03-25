@@ -12,6 +12,7 @@ describe NOMS::Command::Auth::Identity do
     before(:all) do
         setup_fixture
         NOMS::Command::Auth::Identity.identity_dir = 'test/identities'
+        File.chmod 0600, 'test/identity'
         FileUtils.rm_r 'test/identities' if File.directory? 'test/identities'
         File.unlink 'test/identities/.noms-vault-key' if File.exist? 'test/identities/.noms-vault-key'
     end
@@ -69,6 +70,12 @@ describe NOMS::Command::Auth::Identity do
             file = @identity.save :file => 'test/identities/test-identity.json', :encrypt => false
             expect(File.basename(file)).to eq 'test-identity.json'
             expect(File.read file).to match(/Authorization/)
+        end
+
+        it "should not save when from specified file" do
+            this_identity = NOMS::Command::Auth::Identity.from 'test/identity'
+            file = this_identity.save :file => 'test/identities/test-identity.enc'
+            expect(file).to eq 'test/identity'
         end
 
     end
