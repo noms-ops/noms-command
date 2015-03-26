@@ -35,6 +35,15 @@ class NOMS::Command::UserAgent::Requester::Typhoeus < NOMS::Command::Base
         @client_opts = {
             :ssl_verifypeer => false
         }
+        cookies = opt.has_key?(:cookies) ? opt[:cookies] : true
+
+        if cookies
+            cookie_jar = File.join(NOMS::Command.home, 'cookies.txt')
+            @client_opts = @client_opts.merge({
+                                                  :cookiefile => cookie_jar,
+                                                  :cookiejar => cookie_jar
+                                              })
+        end
     end
 
     def get_auth(url)

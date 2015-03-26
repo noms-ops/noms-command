@@ -4,7 +4,7 @@ require 'noms/command/version'
 
 require 'httpclient'
 require 'etc'
-require 'highline/import'
+require 'highline'
 require 'json'
 require 'cgi'
 
@@ -24,6 +24,10 @@ class NOMS::Command::Auth < NOMS::Command::Base
     def initialize(opts={})
         @log = opts[:logger] || default_logger
         @specified = { }
+        @input  = opts[:prompt_input]  || $stdin
+        @output = opts[:prompt_output] || $stdout
+        @force_prompt = opts.has_key?(:force_prompt) ? opts[:force_prompt] : false
+
         (opts[:specified_identities] || []).each do |file|
             maybe_id = NOMS::Command::Auth::Identity.from file
             raise NOMS::Command::Error.now "#{file} contains invalid identity (no 'id')" unless
@@ -56,11 +60,14 @@ class NOMS::Command::Auth < NOMS::Command::Base
                 if id_info = saved(identity_id)
                     NOMS::Command::Auth::Identity.new(id_info, :logger => @log)
                 else
-                    if $stdin.tty?
+                    # It might be nice to synchronize around this to
+                    # make pipelines work.
+                    if $stdin.tty? or @force_prompt
+                        highline = HighLine.new(@input, @output)
                         default_user = Etc.getlogin
                         prompt = "#{domain} (#{realm}) username: "
-                        user = ask(prompt) { |u| u.default = Etc.getlogin }
-                        pass = ask('Password: ') { |p| p.echo = false }
+                        user = highline.ask(prompt) { |u| u.default = Etc.getlogin }
+                        pass = highline.ask('Password: ') { |p| p.echo = false }
                         NOMS::Command::Auth::Identity.new({
                                                               'id' => identity_id,
                                                               'realm' => realm,

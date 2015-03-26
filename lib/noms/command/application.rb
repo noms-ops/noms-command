@@ -60,7 +60,6 @@ class NOMS::Command::Application < NOMS::Command::Base
             @origin = new_url
             @useragent.origin = new_url
             @window.origin = new_url
-            @log.debug "Setting origin to: #{@origin}"
             if response.success?
                 # Unlike typical ReST data sources, this
                 # should very rarely fail unless there is
@@ -83,12 +82,10 @@ class NOMS::Command::Application < NOMS::Command::Base
             end
             if @body.respond_to? :has_key? and @body.has_key? '$doctype'
                 @type = @body['$doctype']
-                @log.debug "Treating as #{@type} document"
                 @document = NOMS::Command::Document.new @body
                 @document.argv = @argv
                 @document.exitcode = 0
             else
-                @log.debug "Treating as raw object (no '$doctype')"
                 @type = 'noms-raw'
             end
         end
@@ -135,7 +132,7 @@ class NOMS::Command::Application < NOMS::Command::Base
                                 @v8.eval response.body
                             rescue StandardError => e
                                 @log.warn "Javascript[#{script_ref}] error: #{e.message}"
-                                @log.debug e.backtrace.join("\n")
+                                @log.debug { e.backtrace.join("\n") }
                             end
                         else
                             @log.warn "Unsupported script type '#{response.content_type.inspect}' " +
@@ -145,11 +142,10 @@ class NOMS::Command::Application < NOMS::Command::Base
                         if request_error
                             @log.warn "Couldn't load script from #{script['$source'].inspect} " +
                                 "(#{request_error.class}): #{request_error.message})"
-                            @log.debug request_error.backtrace.join("\n")
+                            @log.debug { request_error.backtrace.join("\n") }
                         else
                             @log.warn "Couldn't load script from #{script['$source'].inspect}: " +
                                 "#{response.statusText}"
-                            # @log.debug "Body of unsuccessful request: #{response.body}"
                         end
                     end
                 else
@@ -159,7 +155,7 @@ class NOMS::Command::Application < NOMS::Command::Base
                         @v8.eval script
                     rescue StandardError => e
                         @log.warn "Javascript[#{script_ref}] error: #{e.message}"
-                        @log.debug e.backtrace.join("\n")
+                        @log.debug { e.backtrace.join("\n") }
                     end
                 end
                 script_index += 1

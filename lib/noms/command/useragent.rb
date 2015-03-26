@@ -22,16 +22,17 @@ end
 
 class NOMS::Command::UserAgent < NOMS::Command::Base
 
-    attr_reader :cache
+    attr_accessor :cache, :cacher, :auth
 
     def initialize(origin, attrs={})
         @origin = origin.respond_to?(:scheme) ? origin : URI.parse(origin)
         # httpclient
         # TODO Replace with TOFU implementation
         @log = attrs[:logger] || default_logger
-        @log.debug "Creating useragent with origin #{origin}"
-        @client = NOMS::Command::UserAgent::Requester.new :logger => @log
-        @log.debug "Created!"
+        cookies = attrs.has_key?(:cookies) ? attrs[:cookies] : true
+
+        @client = NOMS::Command::UserAgent::Requester.new :logger => @log, :cookies => cookies
+
         @redirect_checks = [ ]
         @plaintext_identity = attrs[:plaintext_identity] || false
 
@@ -42,9 +43,9 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
             @cacher = NOMS::Command::UserAgent::Cache.new
         end
 
-        @log.debug "(UserAgent) specified identities = #{attrs[:specified_identities]}"
-        @auth = NOMS::Command::Auth.new(:logger => @log,
-                                        :specified_identities => (attrs[:specified_identities] || []))
+        @auth = attrs[:auth] || NOMS::Command::Auth.new(:logger => @log,
+                                                        :specified_identities =>
+                                                        (attrs[:specified_identities] || []))
     end
 
     def clear_cache!
@@ -56,17 +57,14 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
     end
 
     def check_redirect(url)
-        @log.debug "Running #{@redirect_checks.size} redirect checks on #{url}" unless @redirect_checks.empty?
         @redirect_checks.all? { |check| check.call(url) }
     end
 
     def origin=(new_origin)
-        @log.debug "Setting my origin to #{new_origin}"
         @origin = new_origin
     end
 
     def absolute_url(url)
-        @log.debug "Calculating absolute url of #{url} in context of #{@origin}"
         begin
             url = URI.parse url unless url.respond_to? :scheme
             url = URI.join(@origin, url) unless url.absolute?
@@ -92,16 +90,9 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
             if cached_response and cached_response.is_a? NOMS::Command::UserAgent::Response
                 cached_response.logger = @log
 
-                @log.debug "Response cached for #{req_url}:"
-                @log.debug "<-- #{JSON.pretty_generate(cached_response.header)}"
-                @log.debug "<-- #{cached_response.body.size} bytes of #{cached_response.content_type}"
-
-                @log.debug "Checking if response age (#{cached_response.age}) is less than absolute max #{@max_age}"
                 if cached_response.age < @max_age
-                    @log.debug "Checking if cached authenticated result is currently authenticated"
                     if (cached_response.auth_hash.nil? or (identity and identity.auth_verify? cached_response.auth_hash))
                         if cached_response.current?
-                            @log.debug ". Using cached response from #{cached_response.date}"
                             return [cached_response, req_url]
                         else
                             # Maybe we can revalidate it
@@ -111,15 +102,9 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
                             elsif cached_response.last_modified
                                 headers = { 'If-Modified-Since' => cached_response.last_modified.httpdate }.merge headers
                                 return self.request(method, url, data, headers, tries, identity, cached_response)
-                            else
-                                @log.debug ". Rejecting cached response (not current, and no way to revalidate)"
                             end
                         end
-                    else
-                        @log.debug ". Rejecting cached response (no authentication)"
                     end
-                else
-                    @log.debug ". Rejecting cached response (beyond absolute max age limit)"
                 end
             end
         end
@@ -134,14 +119,12 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
             raise NOMS::Command::Error.new "Couldn't retrieve #{req_url} (#{e.class}): #{e.message}"
         end
         @log.debug "-> #{response.statusText} (#{response.body.size} bytes of #{response.content_type})"
-        @log.debug JSON.pretty_generate(response.header)
+        @log.debug { JSON.pretty_generate(response.header) }
 
         case response.status
         when 401
-            @log.debug "   handling unauthorized"
             if identity
                 # The identity we got was no good, try again
-                @log.debug "   we have an identity #{identity['username']} @ #{identity} but are trying again"
                 identity.clear
                 if tries > 0
                     identity = @auth.load(req_url, response)
@@ -174,7 +157,6 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
         when 302, 301
             new_url = response.header('Location')
             if check_redirect new_url
-                @log.debug "redirect to #{new_url}"
                 raise NOMS::Command::Error.new "Can't follow redirect to #{new_url}: too many redirects" if tries <= 0
                 return self.request(method, new_url, data, headers, tries - 1, identity)
             end
@@ -190,13 +172,9 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
             cache_object.cached!
             if identity
                 cache_object.auth_hash = identity.verification_hash
-                @log.debug "Setting cached response identity verification hash: #{cache_object.auth_hash}"
             end
             key = request_key(method, req_url)
-            @log.debug "Caching #{key}: #{method} #{req_url}"
             @cacher.set(key, cache_object.to_cache)
-        else
-            @log.debug "Response is not a candidate for caching"
         end
 
         @log.debug "<- #{response.statusText} <- #{req_url}"
@@ -214,18 +192,15 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
     end
 
     def add_redirect_check(&block)
-        @log.debug "Adding #{block} to redirect checks"
         @redirect_checks << block
     end
 
     def clear_redirect_checks
-        @log.debug "Clearing redirect checks"
         @redirect_checks = [ ]
     end
 
     def pop_redirect_check
         unless @redirect_checks.empty?
-            @log.debug "Popping redirect check: #{@redirect_checks[-1]}"
             @redirect_checks.pop
         end
     end

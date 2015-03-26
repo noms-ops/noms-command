@@ -7,7 +7,7 @@ class DNC < Sinatra::Application
 
     set :port, 8787
     set :root, File.expand_path("#{File.dirname(__FILE__)}")
-    enable :static
+    enable :static, :sessions
 
     File.open(File.join(settings.root, 'dnc.pid'), 'w') {|f| f.puts Process.pid }
 
@@ -31,13 +31,40 @@ class DNC < Sinatra::Application
             @auth.provided? and @auth.basic? and @auth.credentials and @auth.credentials == ['testuser', 'testpass']
         end
 
-        def generated_body
-            JSON.pretty_generate({ 'generated' => Time.now.httpdate }) + "\n"
+        def generated_body(h={})
+            JSON.pretty_generate({ 'generated' => Time.now.httpdate }.merge(h)) + "\n"
+        end
+
+        def require_cookie_auth
+            return if cookie_authorized?
+            redirect "/cookie/login?return_to=#{CGI.escape(request.path)}"
+        end
+
+        def cookie_authorized?
+            session[:userid] == 'testuser'
         end
     end
 
     before do
         content_type 'application/json'
+    end
+
+    get '/cookie/login' do
+        require_auth
+        session[:userid] = @auth.credentials.first
+        landing = params[:return_to] || '/cookie/home'
+        redirect landing
+    end
+
+    get '/cookie/home' do
+        require_cookie_auth
+        generated_body({'cookie_user' => session[:userid] })
+    end
+
+    get '/cookie/logout' do
+        old_userid = session[:userid]
+        session[:userid] = nil
+        generated_body({'message' => "#{old_userid} logged out"})
     end
 
     get '/readme' do

@@ -38,20 +38,16 @@ class NOMS::Command::UserAgent::Response < NOMS::Command::Base
     # This is a hash.
     def initialize(httpresponse, opts={})
         @log = opts[:logger] || default_logger
-        @log.debug "Creating response from #{httpresponse.inspect}"
         @response = httpresponse
         self.from_cache = false
         self.auth_hash = nil
 
         if httpresponse.respond_to? :[]
-            @log.debug "Created from hash, setting from_cache = #{httpresponse['from_cache'].inspect}"
             self.from_cache = httpresponse['from_cache']
             self.auth_hash = httpresponse['auth_hash']
             self.original_date = Time.httpdate(httpresponse['original_date'])
             self.date = Time.httpdate(httpresponse['date'])
         end
-
-        @log.debug "self.from_cache? == #{self.from_cache?}"
 
         @cache_control = self.header 'Cache-Control'
         @date = get_header_time('Date') || Time.now
@@ -136,8 +132,6 @@ class NOMS::Command::UserAgent::Response < NOMS::Command::Base
     end
 
     def get_expires
-        @log.debug "Extracting expires: Expires=#{self.header('Expires').inspect} " +
-            "Cache-Control=#{self.header('Cache-Control').inspect}"
 
         expires = [ ]
 
@@ -169,21 +163,13 @@ class NOMS::Command::UserAgent::Response < NOMS::Command::Base
         end
     end
 
-
     def cacheable?
-        @log.debug "   (cacheable? checking response code)"
         return false unless self.status == 200
-        @log.debug "   (cacheable? checking for cache info in headers)"
         return false unless @expires
-        @log.debug "   (cacheable? checking for if alreday cached response)"
         return false if self.from_cache?
-        @log.debug "   (cacheable? checking for no-cache)"
         return false if /no-cache/.match @cache_control
-        @log.debug "   (cacheable? checking for no-store)"
         return false if /no-store/.match @cache_control
-        @log.debug "   (cacheable? checking for Pragma: no-cache"
         return false if self.header 'Pragma' and /no-cache/.match self.header('Pragma')
-        @log.debug "   (cacheable? request is cacheable)"
 
         true
     end
@@ -197,17 +183,13 @@ class NOMS::Command::UserAgent::Response < NOMS::Command::Base
     end
 
     def current?
-        @log.debug "   (current? checking /must-revalidate/ vs #{@cache_control.inspect})"
         return false if (@cache_control and /must-revalidate/.match @cache_control)
-        @log.debug "   (current? checking for cache info [expires = #{@expires.inspect}])"
         return false unless @expires
-        @log.debug "   (current? checking #{Time.now} vs expired = #{@expires.inspect} (#{Time.now > @expires}))"
         return false if Time.now > @expires
         true
     end
 
     def age
-        @log.debug "   (request is #{Time.now - self.original_date} s old)"
         Time.now - self.original_date
     end
 

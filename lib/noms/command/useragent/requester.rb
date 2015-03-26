@@ -18,7 +18,7 @@ end
 
 class NOMS::Command::UserAgent::Requester < NOMS::Command::Base
 
-    @@requester_class = 'typhoeus'
+    @@requester_class = 'httpclient'
 
     def self.new(opts={})
         case @@requester_class

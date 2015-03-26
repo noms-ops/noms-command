@@ -20,9 +20,10 @@ class NOMS::Command::UserAgent::Response < NOMS::Command::Base
 
 end
 
-class NOMS::Command::UserAgent::Response::HTTPClient < NOMS::Command::Base
+class NOMS::Command::UserAgent::Response::HTTPClient < NOMS::Command::UserAgent::Response
 
     def initialize(httpresponse, opts={})
+        super
         @log = opts[:logger] || default_logger
         @response = httpresponse
     end
@@ -39,7 +40,7 @@ class NOMS::Command::UserAgent::Response::HTTPClient < NOMS::Command::Base
         if hdr.nil?
             @response.headers
         else
-            @response.header[hdr.downcase] unless @response.nil?
+            @response.header[hdr.downcase].first
         end
     end
 

@@ -13,6 +13,7 @@ end
 
 def setup_fixture(dir='test')
     system "cp -R fixture #{dir}" unless File.directory? dir
+    File.chmod 0600, 'test/identity'
 end
 
 def start_server(dir='test')
@@ -37,4 +38,8 @@ def teardown_fixture(dir='test')
     if File.directory? dir
         FileUtils.rm_r dir
     end
+end
+
+def get_generated(r)
+    Time.httpdate(JSON.parse(r.body)['generated'])
 end

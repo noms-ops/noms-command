@@ -4,10 +4,6 @@ require 'spec_helper'
 
 require 'noms/command/useragent'
 
-def get_generated(response)
-    Time.httpdate(JSON.parse(response.body)['generated'])
-end
-
 describe 'NOMS::Command::UserAgent' do
     before(:all) do
         setup_fixture
