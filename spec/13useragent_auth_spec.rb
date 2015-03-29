@@ -14,34 +14,60 @@ describe NOMS::Command::UserAgent do
             @output = StringIO.new
             @output.truncate(@output.rewind)
             @auth = NOMS::Command::Auth.new :prompt_input => @input, :prompt_output => @output, :force_prompt => true
+            File.unlink NOMS::Command::Auth::Identity.vault_keyfile if File.exist? NOMS::Command::Auth::Identity.vault_keyfile
+            @ua = NOMS::Command::UserAgent.new 'http://localhost:8787/', :auth => @auth
         end
 
         it "does basic authentication with user input" do
-            ua = NOMS::Command::UserAgent.new 'http://localhost:8787/', :auth => @auth
             @input << "testuser\ntestpass\n"
-                @input.rewind
-            response, = ua.get 'http://localhost:8787/auth/ok'
+            @input.rewind
+            response, = @ua.get 'http://localhost:8787/auth/ok'
+            expect(@output.string).to match %q(http://localhost:8787/ (Authorization Required) username:)
             expect(response.success?).to be_truthy
         end
 
         it "prompts three times for authentication" do
-
+            @input << "testuser\nfailure\ntestuser\nfailure\ntestuser\ntestpass\n"
+            @input.rewind
+            response, = @ua.get 'http://localhost:8787/auth/ok'
+            expect(@output.string).to match Regexp.new(%q((http://localhost:8787/ (Authorization Required) username:.*?){3}))
+            expect(response.success?).to be_truthy
         end
 
         it "saves authentication identity for subsequent uses" do
+            @input << "testuser\ntestpass\n"
+            @input.rewind
+            response0, = @ua.get 'http://localhost:8787/auth/ok'
+            expect(response0.success?).to be_truthy
 
+            @input.truncate(@input.rewind)
+
+            response1, = @ua.get 'http://localhost:8787/auth/ok'
+            expect(response1.success?).to be_truthy
         end
 
         it "does basic authentication with identity file" do
-
+            response, = @ua.get 'http://localhost:8787/auth/ok'
+            expect(response.success?).to be_truthy
         end
 
         it "saves a plaintext identity in specified file" do
-
+            ua = NOMS::Command::UserAgent.new 'http://localhost:8787/', :auth => @auth,
+                :plaintext_identity => 'test/testuser.id'
+            @input << "testuser\ntestpass\n"
+            @input.rewind
+            response, = ua.get 'http://localhost:8787/auth/ok'
+            expect(response.success?).to be_truthy
+            expect(File.exist? 'test/testuser.id').to be_truthy
+            expect(File.read('test/testuser.id').to match(Regexp.new(%q{Authorization+Required=http://localhost:8787/})))
         end
 
         it "doesn't save an identity for a specified identity" do
-
+            ua = NOMS::Command::UserAgent.new 'http://localhost:8787', :auth => @auth,
+                :specified_identity => ['test/identity']
+            response0, = ua.get 'http://localhost:8787/auth/ok'
+            expect(response0.success?).to be_truthy
+            expect(File.exist? NOMS::Command::Auth::Identity.vault_key_file).to be_falsey
         end
 
     end
