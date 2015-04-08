@@ -34,7 +34,7 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
         @client = NOMS::Command::UserAgent::Requester.new :logger => @log, :cookies => cookies
 
         @redirect_checks = [ ]
-        @plaintext_identity = attrs[:plaintext_identity] || false
+        @plaintext_identity = attrs[:plaintext_identity] || nil
 
         @cache = attrs.has_key?(:cache) ? attrs[:cache] : true
         @max_age = attrs[:max_age] || 3600
@@ -164,7 +164,11 @@ class NOMS::Command::UserAgent < NOMS::Command::Base
 
         if identity and response.success?
             @log.debug "Login succeeded, saving #{identity['username']} @ #{identity}"
-            identity.save :encrypt => (! @plaintext_identity)
+            if @plaintext_identity
+                identity.save :file => @plaintext_identity, :encrypt => false
+            else
+                identity.save :encrypt => true
+            end
         end
 
         if @cache and method.to_s.upcase == 'GET' and response.cacheable?
