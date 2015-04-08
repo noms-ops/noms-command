@@ -18,7 +18,7 @@ end
 
 def start_server(dir='test')
     unless server_running? "#{dir}/dnc.pid"
-        system "sh -c '#{RbConfig.ruby} #{dir}/dnc.rb >#{dir}/dnc.out 2>&1 &'"
+        system "sh -c 'thin start -p 8787 -R #{dir}/config.ru >#{dir}/dnc.out 2>&1 &'"
         sleep 2
     end
 end

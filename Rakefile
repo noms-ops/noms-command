@@ -19,7 +19,7 @@ end
 task :start do
     FileUtils.rm_r 'test' if File.directory? 'test'
     system 'cp -R fixture test'
-    system("sh -c '#{RbConfig.ruby} test/dnc.rb >test/dnc.out 2>&1 &'")
+    system("sh -c 'thin start -p 8787 -R test/config.ru >test/dnc.out 2>&1 &'")
 end
 
 task :status do

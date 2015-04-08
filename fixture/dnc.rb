@@ -5,7 +5,6 @@ require 'json'
 # and static file server
 class DNC < Sinatra::Application
 
-    set :port, 8787
     set :root, File.expand_path("#{File.dirname(__FILE__)}")
     enable :static, :sessions
 
@@ -223,7 +222,5 @@ class DNC < Sinatra::Application
         etag "11"
         generated_body
     end
-
-    run! if app_file = $0
 
 end
