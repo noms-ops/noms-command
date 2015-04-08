@@ -41,7 +41,7 @@ class NOMS::Command::Application < NOMS::Command::Base
                                                   :specified_identities => (attrs[:specified_identities] || []),
                                                   :cache => (attrs.has_key?(:cache) ? attrs[:cache] : true),
                                                   :plaintext_identity => (attrs.has_key?(:plaintext_identity) ?
-                                                      attrs[:plaintext_identity] : false))
+                                                      attrs[:plaintext_identity] : nil))
     end
 
     def fetch!

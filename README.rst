@@ -143,12 +143,10 @@ login session.
 
 You can bypass the "vault" by running **noms** with the
 ``--plaintext-identity`` option. This has the effect of caching these
-credentials permanently (well, until they are no longer good). You
+storing these permanently (well, until they are no longer good). You
 should only use this option to generate an identity file for service
 (non-interactive) accounts that need perpetual access to a web
-service. The file will appear in the ``~/.noms/identities`` directory
-in a file named for the SHA-1 hash of the munged authentication realm
-and domain.
+service.
 
 Such a saved identity file can be provided with the ``--identity`` option
 to **noms** for non-interactive use.
@@ -157,7 +155,7 @@ Security
 ~~~~~~~~
 
 **noms** uses strong cryptography to implement the "vault" metaphor, but
-this is only a metaphor and the security provided is limited. The vault
+this is only a metaphor, and the security provided is limited. The vault
 is opened and closed by means of an on-disk key. Because you can easily
 remove it and because it times out when idle (when this happens, **noms**
 overwrites it the next time it tries to use it), it's significantly better
@@ -277,7 +275,7 @@ Scripts have access to the following global objects:
 
   * **location** - The location global object
 
-  * **console** - The console object implements **console.log** for
+  * **console** - The console object implements **console.log()** for
     printing output to the debug stream (visible when the noms option
     ``--debug`` is given.
 

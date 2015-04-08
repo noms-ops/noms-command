@@ -50,19 +50,22 @@ sessions                     same way as a web browser and stores cookies
 
                              This implies that Javascript must be able to
                              script the authentication dialog, which means
-                             there must be some way to do prompting; possibly
-                             with the ``window.prompt()`` interface.
+                             there must be some way to do prompting; currently
+                             this can use the ``window.prompt()`` interface.
 ---------------------------- -----------------------------------------------------
 Login URL with special token **noms** will offer a way for javascripts to persist
 to be included in request    state across requests. This mechanism will allow
-headers                      a javascript to set special headers that it will
-                             have access to for later requests.
+headers                      a javascript to set special headers or request
+                             tokens that it will have access to for later
+                             requests.
+
+                             This will use the WebStorage API.
 ---------------------------- -----------------------------------------------------
 Login URL with special token Similar to above, with a somewhat different request
 to be included in request    implementation.
 bodies
 ---------------------------- -----------------------------------------------------
-OAuth                        **noms** will use httpclient's built-in OAuth
+OAuth                        **noms** may use httpclient's built-in OAuth
                              and prompt the user to authenticate with OAuth, and
                              use the OAuth token for subsequent requests.
 ---------------------------- -----------------------------------------------------
@@ -78,20 +81,12 @@ have a `Web Storage`_ implementation.
 
 .. _`Web Storage`: http://dev.w3.org/html5/webstorage/
 
-Caching
-~~~~~~~
-
-HTTP provides a rich way to control caching of resources, and **noms** should
-honor these strictly for efficiency. It will honor ``Cache-control`` headers
-and use ``ETags`` and ``If-Modified`` appropriately to avoid loading
-application documents, scripts and even data unnecessarily. This should reduce
-many of the inefficiencies associated with serving an interface from the server.
-
 Crossroads
 ----------
 
-This is not a roadmap, but a series of ideas of how **noms** could be enhanced as
-well as unanswered questions about how it should work.
+The following is not a roadmap, but a series of ideas of how **noms**
+could be enhanced as well as unanswered questions about how it should
+work.
 
 I/O
 ~~~
@@ -105,9 +100,8 @@ of ideas how:
   CLI for uploading batch data you can't even do it--your scripts only have access
   to command-line arguments.
 
-  Use node.js-style `Readable Stream`_ implementation to have access to stdin.
-
-.. _`Readable Stream`: https://nodejs.org/api/stream.html
+  Use HTML5 FileReader API to have access to stdin, probably through
+  ``windows.stdin``.
 
 Another thing is the possibility of doing I/O on select named files. **noms** could
 perhaps pre-parse the command line and add the files mentioned on the command line
@@ -121,6 +115,8 @@ stream implementation. Exactly how to do this safely would be a challenge. Are o
 certain options allowed? Files that already exist (otherwise it would be easy to allow
 the script to write to unintended files). No files with '..'? What about -oFile.json
 vs. -onf?
+
+This seems like something that's too easy to get very wrong.
 
 Another I/O-related subject is that **noms** is currently completely request/response-
 oriented. It might be nice to be able to stream output data, or input data for file-

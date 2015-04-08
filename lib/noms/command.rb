@@ -64,7 +64,9 @@ class NOMS::Command
                 :short => '-X',
                 :long => '--nodefault-bookmarks'
             opt :debug,    "Enable debug output", :short => '-d'
-            opt :'plaintext-identity', "Save identity credentials in plaintext", :short => '-P'
+            opt :'plaintext-identity', "Save identity credentials in plaintext",
+                :short => '-P', :type => :string
+            opt :version, "Print version and exit", :short => '-V'
             stop_on_unknown
         end
 
